@@ -13,8 +13,8 @@ platform :ios do
       export_method: "app-store",
       export_options: {
         provisioningProfiles: {
-          "io.gitjournal.gitjournal" => "CI - io.gitjournal.gitjournal",
-          "io.gitjournal.gitjournal.ShareExtension" => "CI - io.gitjournal.gitjournal.ShareExtension"
+          "baruchiro.gitjournal" => "CI - baruchiro.gitjournal",
+          "baruchiro.gitjournal.ShareExtension" => "CI - baruchiro.gitjournal.ShareExtension"
         }
       }
     )

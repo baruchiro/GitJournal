@@ -224,7 +224,7 @@ class _AppDrawerState extends State<AppDrawer>
               title: context.loc.drawerRate,
               onTap: () {
                 LaunchReview.launch(
-                  androidAppId: "io.gitjournal.gitjournal",
+                  androidAppId: "baruchiro.gitjournal",
                   iOSAppId: "1466519634",
                 );
 

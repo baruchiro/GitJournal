@@ -1,7 +1,7 @@
 # Uninstalling an app
 
-Real Devices: ideviceinstaller -U io.gitjournal.gitjournal
-For Simulators: xcrun simctl uninstall booted io.gitjournal.gitjournal
+Real Devices: ideviceinstaller -U baruchiro.gitjournal
+For Simulators: xcrun simctl uninstall booted baruchiro.gitjournal
 
 # List Devices
 

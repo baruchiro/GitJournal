@@ -28,10 +28,10 @@ jobs:
       #     name: Unit Tests ${{ matrix.os }} ${{ matrix.sdk }}
       #     path: test-results.xml
       #     reporter: jest-junit
-      - name: Unlock Secrets
-        env:
-          GITCRYPT_KEY: ${{ secrets.GITCRYPT_KEY }}
-        run: ./scripts/decrypt_secrets.sh
+      # - name: Unlock Secrets
+      #   env:
+      #     GITCRYPT_KEY: ${{ secrets.GITCRYPT_KEY }}
+      #   run: ./scripts/decrypt_secrets.sh
       - name: Setup Env
         run: dart ./scripts/setup_env.dart
       - name: Build
@@ -42,5 +42,5 @@ jobs:
           name: APK
           path: "*.apk"
           if-no-files-found: error
-      - name: Publish Alpha
-        run: cd android && fastlane alphaBuild
+      # - name: Publish Alpha
+      #   run: cd android && fastlane alphaBuild

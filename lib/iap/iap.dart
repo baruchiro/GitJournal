@@ -141,14 +141,14 @@ class SubscriptionStatus {
 }
 
 Future<SubscriptionStatus> verifyPurchase(PurchaseDetails purchase) async {
-  var dt = await getExpiryDate(
-    purchase.verificationData.serverVerificationData,
-    purchase.productID,
-    _isPurchase(purchase),
-  );
-  if (dt == null) {
-    return SubscriptionStatus.basic();
-  }
+  // var dt = await getExpiryDate(
+  //   purchase.verificationData.serverVerificationData,
+  //   purchase.productID,
+  //   _isPurchase(purchase),
+  // );
+  // if (dt == null) {
+  //   return SubscriptionStatus.basic();
+  // }
   return SubscriptionStatus.pro();
 }
 

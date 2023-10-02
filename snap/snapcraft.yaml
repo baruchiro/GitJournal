@@ -11,7 +11,7 @@ slots:
   dbus-gitjournal:
     interface: dbus
     bus: session
-    name: io.gitjournal.gitjournal
+    name: baruchiro.gitjournal
 
 apps:
   gitjournal:

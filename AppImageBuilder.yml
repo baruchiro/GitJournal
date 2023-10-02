@@ -16,7 +16,7 @@ AppDir:
     - cp assets/icon/icon.svg AppDir/usr/share/icons/gitjournal.svg
   path: _CODE_PATH_/AppDir
   app_info:
-    id: io.gitjournal.gitjournal
+    id: baruchiro.gitjournal
     name: GitJournal
     icon: gitjournal
     version: latest

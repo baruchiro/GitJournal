@@ -49,7 +49,7 @@ export ENTITLEMENTS="$(pwd)/macos/Runner/Release.entitlements"
 
 cd "$MACOS_APP_RELEASE_PATH"
 
-$APP_NOTARIZER --notarize -a "$APP_NAME.app" -b "io.gitjournal.gitjournal" \
+$APP_NOTARIZER --notarize -a "$APP_NAME.app" -b "baruchiro.gitjournal" \
     -u "ios.ci@gitjournal.io" -p "$FASTLANE_PASSWORD" \
     -e "$ENTITLEMENTS" -v "4NYTN6RU3N" \
     -i "Developer ID Application: Vishesh Handa (4NYTN6RU3N)"
@@ -75,7 +75,7 @@ create-dmg \
     "$APP_NAME.dmg" \
     "$APP_NAME.app"
 
-$APP_NOTARIZER --notarize -a "$APP_NAME.dmg" -b "io.gitjournal.gitjournal" \
+$APP_NOTARIZER --notarize -a "$APP_NAME.dmg" -b "baruchiro.gitjournal" \
     -u "ios.ci@gitjournal.io" -p "$FASTLANE_PASSWORD" \
     -v "4NYTN6RU3N" \
     -i "Developer ID Installer: Vishesh Handa (4NYTN6RU3N)"

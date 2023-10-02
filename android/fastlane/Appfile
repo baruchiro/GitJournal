@@ -3,4 +3,4 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 json_key_file("./secrets/google-play-api-key.json")
-package_name("io.gitjournal.gitjournal")
+package_name("baruchiro.gitjournal")

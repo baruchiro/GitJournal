@@ -19,6 +19,12 @@ jobs:
         with:
           fetch-depth: 0
       - run: git config --global --add safe.directory '*'
+      - name: Setup JDK 11
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt'
+          java-version: '11'
+          cache: gradle
       - name: Test
         run: ./scripts/test.sh
       # - name: Test Report

@@ -27,17 +27,6 @@ jobs:
           java-version: '11'
           cache: gradle
       
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.13.6' # Set the version of Flutter you want to use
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          sdk-version: '34' # Set the version of the Android SDK you want to use
-          ndk-version: '19.2.5345600' # Set the version of the Android NDK you want to use
-
       - name: Test
         run: ./scripts/test.sh
       # - name: Test Report

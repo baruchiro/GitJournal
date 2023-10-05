@@ -14,8 +14,8 @@ echo "Build Number: $BUILD_NUM"
 BUILD_ID=$(make version | tail -n 1 | awk '{ print $4 }')
 
 # Also building the apk, as it's useful for non Google Play users
-flutter build apk --flavor prod --build-number="$BUILD_NUM" --dart-define=INSTALL_SOURCE=fdroid
-cp build/app/outputs/flutter-apk/app-prod-release.apk baruchiro.gitjournal_$BUILD_ID.apk
+flutter build apk --flavor dev --build-number="$BUILD_NUM" --dart-define=INSTALL_SOURCE=fdroid
+cp build/app/outputs/flutter-apk/app-dev.apk baruchiro.gitjournal_$BUILD_ID.apk
 
 # flutter build apk --flavor dev --build-number="$BUILD_NUM" --dart-define=INSTALL_SOURCE=fdroid
 # cp build/app/outputs/flutter-apk/app-dev-release.apk baruchiro.gitjournal.dev_$BUILD_ID.apk

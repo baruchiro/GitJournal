@@ -25,18 +25,23 @@ jobs:
         with:
           flutter-version: '3.13.6'
 
-      - name: Set Build Number into env
-        run: echo "BUILDNUMBER=$(git rev-list --count HEAD)" >> $GITHUB_ENV
+      - name: Build Number
+        id: buildnumber
+        run: echo "::set-output name=buildnumber::$(git rev-list --count HEAD)"
       - name: build
+        env:
+          BUILD_NUM: ${{ steps.buildnumber.outputs.buildnumber }}
         run: flutter build apk --flavor dev --debug --build-number="$BUILD_NUM" --dart-define=INSTALL_SOURCE=fdroid
       - name: rename
+        env:
+          BUILD_NUM: ${{ steps.buildnumber.outputs.buildnumber }}
         run: cp build/app/outputs/flutter-apk/app-dev-debug.apk baruchiro.gitjournal_$BUILD_NUM.apk
       - name: release
         uses: softprops/action-gh-release@v1
         with:
           files: baruchiro.gitjournal_$BUILD_NUM.apk
-          name: $BUILD_NUM
-          tag_name: $BUILD_NUM
+          name: ${{ steps.buildnumber.outputs.buildnumber }}
+          tag_name: v${{ steps.buildnumber.outputs.buildnumber }}
       # - name: Build
       #   run: ./scripts/build_android.sh
       # - name: "Upload Artifact"

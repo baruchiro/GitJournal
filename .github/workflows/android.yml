@@ -24,33 +24,26 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.13.6'
-      # - run: flutter pub get
-      # - run: flutter test
-      # - run: flutter build apk
-      # - run: flutter build appbundle
-      # - run: git config --global --add safe.directory '*'
-      # - name: Test
-      #   run: ./scripts/test.sh
-      # - name: Test Report
-      #   uses: dorny/test-reporter@v1
-      #   if: success() || failure()
-      #   with:
-      #     name: Unit Tests ${{ matrix.os }} ${{ matrix.sdk }}
-      #     path: test-results.xml
-      #     reporter: jest-junit
-      # - name: Unlock Secrets
-      #   env:
-      #     GITCRYPT_KEY: ${{ secrets.GITCRYPT_KEY }}
-      #   run: ./scripts/decrypt_secrets.sh
-      # - name: Setup Env
-      #   run: dart ./scripts/setup_env.dart
-      - name: Build
-        run: ./scripts/build_android.sh
-      - name: "Upload Artifact"
-        uses: actions/upload-artifact@v2
+
+      - name: Set Build Number into env
+        run: echo "BUILDNUMBER=$(git rev-list --count HEAD)" >> $GITHUB_ENV
+      - name: build
+        run: flutter build apk --flavor dev --debug --build-number="$BUILD_NUM" --dart-define=INSTALL_SOURCE=fdroid
+      - name: rename
+        run: cp build/app/outputs/flutter-apk/app-dev-debug.apk baruchiro.gitjournal_$BUILD_NUM.apk
+      - name: release
+        uses: softprops/action-gh-release@v1
         with:
-          name: APK
-          path: "*.apk"
-          if-no-files-found: error
+          files: baruchiro.gitjournal_$BUILD_NUM.apk
+          name: $BUILD_NUM
+          tag_name: $BUILD_NUM
+      # - name: Build
+      #   run: ./scripts/build_android.sh
+      # - name: "Upload Artifact"
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: APK
+      #     path: "*.apk"
+      #     if-no-files-found: error
       # - name: Publish Alpha
       #   run: cd android && fastlane alphaBuild

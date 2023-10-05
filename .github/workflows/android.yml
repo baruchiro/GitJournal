@@ -27,7 +27,7 @@ jobs:
 
       - name: Build Number
         id: buildnumber
-        run: echo "::set-output name=buildnumber::$(git rev-list --count HEAD)"
+        run: echo "BUILD_NUM=$(git rev-list --count HEAD)" >> $GITHUB_STATE
       - name: build
         env:
           BUILD_NUM: ${{ steps.buildnumber.outputs.buildnumber }}

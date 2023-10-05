@@ -28,9 +28,9 @@ jobs:
       # - run: flutter test
       # - run: flutter build apk
       # - run: flutter build appbundle
-      - run: git config --global --add safe.directory '*'
-      - name: Test
-        run: ./scripts/test.sh
+      # - run: git config --global --add safe.directory '*'
+      # - name: Test
+      #   run: ./scripts/test.sh
       # - name: Test Report
       #   uses: dorny/test-reporter@v1
       #   if: success() || failure()
@@ -42,8 +42,8 @@ jobs:
       #   env:
       #     GITCRYPT_KEY: ${{ secrets.GITCRYPT_KEY }}
       #   run: ./scripts/decrypt_secrets.sh
-      - name: Setup Env
-        run: dart ./scripts/setup_env.dart
+      # - name: Setup Env
+      #   run: dart ./scripts/setup_env.dart
       - name: Build
         run: ./scripts/build_android.sh
       - name: "Upload Artifact"

@@ -39,7 +39,7 @@ jobs:
       - name: release
         uses: softprops/action-gh-release@v1
         with:
-          files: baruchiro.gitjournal_$BUILD_NUM.apk
+          files: baruchiro.gitjournal_${{ steps.buildnumber.outputs.BUILD_NUM }}.apk
           name: ${{ steps.buildnumber.outputs.BUILD_NUM }}
           tag_name: v${{ steps.buildnumber.outputs.BUILD_NUM }}
       # - name: Build

@@ -42,6 +42,7 @@ jobs:
           files: baruchiro.gitjournal_${{ steps.buildnumber.outputs.BUILD_NUM }}.apk
           name: ${{ steps.buildnumber.outputs.BUILD_NUM }}
           tag_name: v${{ steps.buildnumber.outputs.BUILD_NUM }}
+          fail_on_unmatched_files: true
       # - name: Build
       #   run: ./scripts/build_android.sh
       # - name: "Upload Artifact"

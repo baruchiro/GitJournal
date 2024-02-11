@@ -12,51 +12,43 @@ on:
 jobs:
   Build:
     runs-on: ubuntu-latest
-    # container: ghcr.io/gitjournal/flutter-android-sdk:latest
     steps:
       - name: checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - run: git config --global --add safe.directory '*'
-
-      - name: Setup JDK 12
-        uses: actions/setup-java@v3
+      - uses: actions/setup-java@v2
         with:
-          distribution: 'adopt'
-          java-version: '12'
-          cache: gradle
-      
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+          distribution: "zulu"
+          java-version: "11"
+      - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.13.6' # Set the version of Flutter you want to use
+          flutter-version: "3.13.6"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Test
-        run: ./scripts/test.sh
-      # - name: Test Report
-      #   uses: dorny/test-reporter@v1
-      #   if: success() || failure()
+      - name: Build Number
+        id: buildnumber
+        run: echo "BUILD_NUM=$(git rev-list --count HEAD)" >> $GITHUB_OUTPUT
+      - name: build
+        env:
+          BUILD_NUM: ${{ steps.buildnumber.outputs.BUILD_NUM }}
+        run: flutter build apk --flavor dev --debug --build-number="$BUILD_NUM" --dart-define=INSTALL_SOURCE=fdroid
+      - name: rename
+        env:
+          BUILD_NUM: ${{ steps.buildnumber.outputs.BUILD_NUM }}
+        run: cp build/app/outputs/flutter-apk/app-dev-debug.apk baruchiro.gitjournal_$BUILD_NUM.apk
+      - name: release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: baruchiro.gitjournal_${{ steps.buildnumber.outputs.BUILD_NUM }}.apk
+          name: ${{ steps.buildnumber.outputs.BUILD_NUM }}
+          tag_name: v${{ steps.buildnumber.outputs.BUILD_NUM }}
+      # - name: Build
+      #   run: ./scripts/build_android.sh
+      # - name: "Upload Artifact"
+      #   uses: actions/upload-artifact@v2
       #   with:
-      #     name: Unit Tests ${{ matrix.os }} ${{ matrix.sdk }}
-      #     path: test-results.xml
-      #     reporter: jest-junit
-      # - name: Unlock Secrets
-      #   env:
-      #     GITCRYPT_KEY: ${{ secrets.GITCRYPT_KEY }}
-      #   run: ./scripts/decrypt_secrets.sh
-      - name: Setup Env
-        run: dart ./scripts/setup_env.dart
-      - name: Build
-        run: ./scripts/build_android.sh
-      - name: "Upload Artifact"
-        uses: actions/upload-artifact@v2
-        with:
-          name: APK
-          path: "*.apk"
-          if-no-files-found: error
+      #     name: APK
+      #     path: "*.apk"
+      #     if-no-files-found: error
       # - name: Publish Alpha
       #   run: cd android && fastlane alphaBuild

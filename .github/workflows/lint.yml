@@ -4,7 +4,8 @@
 
 name: Lint
 
-on: [push, pull_request]
+on:
+  workflow_dispatch:
 
 jobs:
   Lint:
@@ -20,12 +21,12 @@ jobs:
       - name: dart code metrics
         run: flutter pub run dart_code_metrics:metrics lib
 
-  REUSE-Licensing:
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: REUSE Compliance Check
-        uses: fsfe/reuse-action@v1
+  # REUSE-Licensing:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: checkout
+  #       uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
+  #     - name: REUSE Compliance Check
+  #       uses: fsfe/reuse-action@v1

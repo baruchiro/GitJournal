@@ -153,10 +153,10 @@ Future<SubscriptionStatus> verifyPurchase(PurchaseDetails purchase) async {
 }
 
 // Checks if it is a subscription or a purchase
-bool _isPurchase(PurchaseDetails purchase) {
-  var sku = purchase.productID;
-  return !sku.contains('monthly') && !sku.contains('_sub_');
-}
+// bool _isPurchase(PurchaseDetails purchase) {
+//   var sku = purchase.productID;
+//   return !sku.contains('monthly') && !sku.contains('_sub_');
+// }
 
 class IAPVerifyException implements Exception {
   final int code;

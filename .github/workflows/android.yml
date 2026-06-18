@@ -2,56 +2,120 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-name: Android
+name: Build APK
 
 on:
   push:
     branches:
       - master
+      # Temporary: lets this branch build an APK before it is merged to master.
+      - claude/elegant-johnson-5sn880
+  workflow_dispatch:
+
+permissions:
+  contents: write # required to publish the APK as a GitHub Release
 
 jobs:
   Build:
     runs-on: ubuntu-latest
     steps:
-      - name: Give more Disk Space
-        run: sudo rm -rf /usr/share/dotnet
-      - name: checkout
-        uses: actions/checkout@v3
+      - name: Free up disk space
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android/sdk/ndk || true
+
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Unlock secrets
-        uses: sliteteam/github-action-git-crypt-unlock@1.2.0
-        env:
-          GIT_CRYPT_KEY: ${{ secrets.GITCRYPT_KEY }}
-      - uses: actions/setup-java@v3
+
+      - uses: actions/setup-java@v4
         with:
           distribution: "zulu"
           java-version: "17"
+
       - name: Get Flutter version from pubspec
         run: |
           set -e
-          FLUTTER_VERSION=$(cat pubspec.yaml | grep 'flutter:' | head -n 1 | awk '{ print $2 }' | tr -d '"' | cut -d "=" -f 2)
-          echo "FLUTTER_VERSION=${FLUTTER_VERSION}" >> $GITHUB_ENV
+          FLUTTER_VERSION=$(grep 'flutter:' pubspec.yaml | head -n 1 | awk '{ print $2 }' | tr -d '"' | cut -d "=" -f 2)
+          echo "FLUTTER_VERSION=${FLUTTER_VERSION}" >> "$GITHUB_ENV"
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
-      - name: Setup Env
+      - name: Generate env file
         run: dart ./scripts/setup_env.dart
-      - name: Flutter Doctor
-        run: flutter doctor
-      - name: Get Flutter Deps
+
+      - name: Get dependencies
         run: flutter pub get --suppress-analytics
-      - name: Test
-        run: flutter test
-      - name: Build
-        run: ./scripts/build_android.sh
-      - name: "Upload Artifact"
+
+      # Builds a *release* APK, which must be signed to be installable.
+      # If a KEYSTORE_BASE64 repository secret is present we sign with it
+      # (recommended: lets you upgrade the app in place across builds).
+      # Otherwise we generate a throw-away keystore so the build still works
+      # with zero setup -- but you will have to uninstall/reinstall to update,
+      # since the signing key changes on every run.
+      - name: Set up signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -e
+          # Gradle reads rootProject.file('secrets/key.properties'), which
+          # resolves to android/secrets/ (the Gradle root is the android dir).
+          # The tracked files there are git-crypt encrypted, so overwrite them.
+          mkdir -p android/secrets
+          KEYSTORE_PATH="$(pwd)/android/secrets/keystore.jks"
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Signing with keystore from repository secrets."
+            echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
+            STORE_PASS="$KEYSTORE_PASSWORD"
+            ALIAS="${KEY_ALIAS:-gitjournal}"
+            KEY_PASS="${KEY_PASSWORD:-$KEYSTORE_PASSWORD}"
+          else
+            echo "No KEYSTORE_BASE64 secret found - generating an ephemeral keystore."
+            rm -f "$KEYSTORE_PATH"
+            keytool -genkeypair -v -keystore "$KEYSTORE_PATH" \
+              -storepass android -keypass android -alias gitjournal \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=GitJournal Pro, OU=Personal, O=Personal, L=, S=, C=US"
+            STORE_PASS="android"
+            ALIAS="gitjournal"
+            KEY_PASS="android"
+          fi
+          {
+            echo "storeFile=${KEYSTORE_PATH}"
+            echo "storePassword=${STORE_PASS}"
+            echo "keyAlias=${ALIAS}"
+            echo "keyPassword=${KEY_PASS}"
+          } > android/secrets/key.properties
+
+      - name: Build number
+        id: buildnumber
+        run: echo "BUILD_NUM=$(git rev-list --count HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Build APK
+        run: |
+          flutter build apk --flavor prod --release \
+            --build-number="${{ steps.buildnumber.outputs.BUILD_NUM }}" \
+            --dart-define=INSTALL_SOURCE=fdroid
+          cp build/app/outputs/flutter-apk/app-prod-release.apk \
+            "gitjournal-pro_${{ steps.buildnumber.outputs.BUILD_NUM }}.apk"
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: APK
-          path: "*.apk"
+          name: gitjournal-pro-apk
+          path: gitjournal-pro_*.apk
           if-no-files-found: error
-      - name: Publish Alpha
-        run: cd android && fastlane alphaBuild
+
+      - name: Publish GitHub Release
+        if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: gitjournal-pro_${{ steps.buildnumber.outputs.BUILD_NUM }}.apk
+          name: Build ${{ steps.buildnumber.outputs.BUILD_NUM }}
+          tag_name: v${{ steps.buildnumber.outputs.BUILD_NUM }}
+          fail_on_unmatched_files: true

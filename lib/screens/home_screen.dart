@@ -12,6 +12,7 @@ import 'package:gitjournal/folder_views/folder_view.dart';
 import 'package:gitjournal/l10n.dart';
 import 'package:gitjournal/repository.dart';
 import 'package:gitjournal/screens/cache_loading_screen.dart';
+import 'package:gitjournal/settings/settings.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 
@@ -25,6 +26,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   NotesFolder? notesFolder;
   NotesFolderFS? rootFolder;
+  String? homeFolderSpec;
 
   @override
   void initState() {
@@ -36,12 +38,19 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
 
     var root = context.watch<NotesFolderFS>();
-    if (root != rootFolder) {
+    var spec = context.watch<Settings>().homeScreenFolderSpec;
+    if (root != rootFolder || spec != homeFolderSpec) {
       rootFolder = root;
-      notesFolder = FlattenedNotesFolder(
-        root,
-        title: context.loc.screensHomeAllNotes,
-      );
+      homeFolderSpec = spec;
+
+      // When a home folder is configured, open straight into it. Otherwise
+      // fall back to the flattened "All Notes" view.
+      var folder = spec.isNotEmpty ? root.getFolderWithSpec(spec) : null;
+      notesFolder = folder ??
+          FlattenedNotesFolder(
+            root,
+            title: context.loc.screensHomeAllNotes,
+          );
     }
   }
 

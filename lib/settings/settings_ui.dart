@@ -6,6 +6,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:gitjournal/core/folder/notes_folder_fs.dart';
 import 'package:gitjournal/l10n.dart';
 import 'package:gitjournal/settings/settings.dart';
 import 'package:gitjournal/settings/settings_bottom_menu_bar.dart';
@@ -16,6 +17,8 @@ import 'package:gitjournal/settings/settings_theme.dart';
 import 'package:gitjournal/settings/widgets/language_selector.dart';
 import 'package:gitjournal/settings/widgets/settings_header.dart';
 import 'package:gitjournal/settings/widgets/settings_list_preference.dart';
+import 'package:gitjournal/utils/utils.dart';
+import 'package:gitjournal/widgets/folder_selection_dialog.dart';
 import 'package:gitjournal/widgets/pro_overlay.dart';
 import 'package:provider/provider.dart';
 
@@ -101,6 +104,7 @@ class SettingsUIScreen extends StatelessWidget {
             },
           ),
         ),
+        const ProOverlay(child: HomeFolderTile()),
         ProOverlay(
           child: ListTile(
             title: Text(context.loc.settingsBottomMenuBarTitle),
@@ -139,6 +143,45 @@ class SettingsUIScreen extends StatelessWidget {
         ),
       ),
       body: list,
+    );
+  }
+}
+
+/// Lets the user pick a folder that the app opens into on launch.
+/// An empty spec means the default flattened "All Notes" home screen.
+class HomeFolderTile extends StatelessWidget {
+  const HomeFolderTile({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    var settings = context.watch<Settings>();
+
+    var spec = settings.homeScreenFolderSpec;
+    String subtitle;
+    if (spec.isEmpty) {
+      subtitle = "All notes (default)";
+    } else if (!folderWithSpecExists(context, spec)) {
+      // The configured folder no longer exists - reset to the default.
+      subtitle = "All notes (default)";
+      settings.homeScreenFolderSpec = "";
+      settings.save();
+    } else {
+      subtitle = spec;
+    }
+
+    return ListTile(
+      title: const Text("Home folder"),
+      subtitle: Text(subtitle),
+      onTap: () async {
+        var destFolder = await showDialog<NotesFolderFS>(
+          context: context,
+          builder: (context) => FolderSelectionDialog(),
+        );
+        if (destFolder != null) {
+          settings.homeScreenFolderSpec = destFolder.folderPath;
+          settings.save();
+        }
+      },
     );
   }
 }

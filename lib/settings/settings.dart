@@ -37,6 +37,7 @@ class Settings extends ChangeNotifier with SettingsSharedPref {
   String customMetaData = "";
 
   String defaultNewNoteFolderSpec = "";
+  String homeScreenFolderSpec = "";
   String journalEditordefaultNewNoteFolderSpec = "";
   bool journalEditorSingleNote = false;
 
@@ -68,6 +69,8 @@ class Settings extends ChangeNotifier with SettingsSharedPref {
   void load() {
     defaultNewNoteFolderSpec =
         getString("defaultNewNoteFolderSpec") ?? defaultNewNoteFolderSpec;
+    homeScreenFolderSpec =
+        getString("homeScreenFolderSpec") ?? homeScreenFolderSpec;
     journalEditordefaultNewNoteFolderSpec =
         getString("journalEditordefaultNewNoteFolderSpec") ??
             journalEditordefaultNewNoteFolderSpec;
@@ -111,6 +114,8 @@ class Settings extends ChangeNotifier with SettingsSharedPref {
 
     await setString("defaultNewNoteFolderSpec", defaultNewNoteFolderSpec,
         def.defaultNewNoteFolderSpec);
+    await setString("homeScreenFolderSpec", homeScreenFolderSpec,
+        def.homeScreenFolderSpec);
     await setString(
         "journalEditordefaultNewNoteFolderSpec",
         journalEditordefaultNewNoteFolderSpec,
@@ -156,6 +161,7 @@ class Settings extends ChangeNotifier with SettingsSharedPref {
       "customMetaData": customMetaData,
       "defaultNewNoteFolderSpec":
           defaultNewNoteFolderSpec.isNotEmpty.toString(),
+      "homeScreenFolderSpec": homeScreenFolderSpec,
       "journalEditordefaultNewNoteFolderSpec":
           journalEditordefaultNewNoteFolderSpec,
       'journalEditorSingleNote': journalEditorSingleNote.toString(),

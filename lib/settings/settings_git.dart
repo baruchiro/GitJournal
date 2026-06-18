@@ -22,7 +22,7 @@ class SettingsGit extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var repo = Provider.of<GitJournalRepo>(context);
+    var repo = context.watch<GitJournalRepo>();
     var gitConfig = context.watch<GitConfig>();
 
     var list = ListView(
@@ -40,7 +40,7 @@ class SettingsGit extends StatelessWidget {
                 name: GitRemoteSettingsScreen.routePath,
               ),
             );
-            var _ = Navigator.push(context, route);
+            Navigator.push(context, route);
           },
           enabled: repo.remoteGitRepoConfigured,
         ),

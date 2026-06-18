@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import 'package:dart_date/dart_date.dart';
 import 'package:flutter/foundation.dart' as foundation;
 import 'package:flutter/material.dart';
 import 'package:gitjournal/core/folder/notes_folder_fs.dart';
@@ -12,7 +11,6 @@ import 'package:gitjournal/core/note_storage.dart';
 import 'package:gitjournal/core/notes/note.dart';
 import 'package:gitjournal/l10n.dart';
 import 'package:gitjournal/settings/settings.dart';
-import 'package:gitjournal/utils/result.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -39,14 +37,14 @@ Future<String> getVersionString({bool includeAppName = true}) async {
 }
 
 SnackBar buildUndoDeleteSnackbar(
-    BuildContext context, GitJournalRepo stateContainer, Note deletedNote) {
+    BuildContext context, GitJournalRepo repo, Note deletedNote) {
   return SnackBar(
     content: Text(context.loc.widgetsFolderViewNoteDeleted),
     action: SnackBarAction(
       label: context.loc.widgetsFolderViewUndo,
       onPressed: () {
         Log.d("Undoing delete");
-        stateContainer.undoRemoveNote(deletedNote);
+        repo.undoRemoveNote(deletedNote);
       },
     ),
   );
@@ -67,15 +65,12 @@ void showErrorMessageSnackbar(BuildContext context, String message) {
 }
 
 void showErrorSnackbar(BuildContext context, Object error) {
-  assert(error is Error || error is Exception, "Error is ${error.runtimeType}");
+  assert(
+    error is Error || error is Exception || error is String,
+    "Error is ${error.runtimeType}",
+  );
   var message = error.toString();
   showErrorMessageSnackbar(context, message);
-}
-
-void showResultError<T>(BuildContext context, Result<T> result) {
-  if (result.isFailure) {
-    showErrorMessageSnackbar(context, result.error.toString());
-  }
 }
 
 NotesFolderFS getFolderForEditor(
@@ -106,17 +101,17 @@ Future<void> showAlertDialog(
 }
 
 bool folderWithSpecExists(BuildContext context, String spec) {
-  var rootFolder = Provider.of<NotesFolderFS>(context, listen: false);
+  var rootFolder = context.read<NotesFolderFS>();
 
   return rootFolder.getFolderWithSpec(spec) != null;
 }
 
 Future<void> shareNote(Note note) async {
-  return Share.share(NoteStorage.serialize(note));
+  await Share.share(NoteStorage.serialize(note));
 }
 
 Future<Note?> getTodayJournalEntry(NotesFolderFS rootFolder) async {
-  var today = Date.today;
+  var today = DateTime.now();
   var matches = await rootFolder.matchNotes((n) async {
     return n.type == NoteType.Journal && n.created.isAtSameDayAs(today);
   });

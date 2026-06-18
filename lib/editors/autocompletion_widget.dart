@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:gitjournal/editors/common.dart';
 import 'package:gitjournal/logger/logger.dart';
@@ -74,6 +72,9 @@ class _AutoCompletionWidgetState extends State<AutoCompletionWidget> {
       return;
     }
 
+    if ((range.end - range.start) <= 0) return;
+    if (range.end > text.length) return;
+
     var prefix = text.substring(range.start, range.end);
     if (prefix == "\n") {
       // Pressed Enter
@@ -141,7 +142,7 @@ class _AutoCompletionWidgetState extends State<AutoCompletionWidget> {
     Overlay.of(context).insert(overlayEntry!);
 
     // Removes the over lay entry from the Overly after 500 milliseconds
-    var _ = await Future.delayed(5000.milliseconds);
+    await Future.delayed(5000.milliseconds);
     _hideOverlay();
   }
 

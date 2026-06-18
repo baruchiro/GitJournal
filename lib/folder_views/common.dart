@@ -5,23 +5,21 @@
  */
 
 import 'package:flutter/material.dart';
-
-import 'package:path/path.dart' as p;
-import 'package:provider/provider.dart';
-
 import 'package:gitjournal/app_router.dart';
 import 'package:gitjournal/core/folder/notes_folder.dart';
 import 'package:gitjournal/core/folder/notes_folder_fs.dart';
 import 'package:gitjournal/core/note.dart';
 import 'package:gitjournal/core/notes/note.dart';
 import 'package:gitjournal/editors/note_editor.dart';
-import 'package:gitjournal/folder_views/calendar_view.dart';
 import 'package:gitjournal/folder_views/card_view.dart';
 import 'package:gitjournal/folder_views/grid_view.dart';
 import 'package:gitjournal/folder_views/journal_view.dart';
 import 'package:gitjournal/logger/logger.dart';
 import 'package:gitjournal/repository.dart';
 import 'package:gitjournal/utils/utils.dart';
+import 'package:path/path.dart' as p;
+import 'package:provider/provider.dart';
+
 import 'common_types.dart';
 import 'standard_view.dart';
 
@@ -77,15 +75,6 @@ Widget buildFolderView({
         isNoteSelected: isNoteSelected,
         searchTerm: searchTerm,
       );
-    case FolderViewType.Calendar:
-      return CalendarFolderView(
-        folder: folder,
-        noteTapped: noteTapped,
-        noteLongPressed: noteLongPressed,
-        emptyText: emptyText,
-        isNoteSelected: isNoteSelected,
-        searchTerm: searchTerm,
-      );
   }
 }
 
@@ -109,8 +98,8 @@ Future<void> openNoteEditor(
   if (showUndoSnackBar != null) {
     Log.d("Showing an undo snackbar");
 
-    var stateContainer = context.read<GitJournalRepo>();
-    var snackBar = buildUndoDeleteSnackbar(context, stateContainer, note);
+    var repo = context.read<GitJournalRepo>();
+    var snackBar = buildUndoDeleteSnackbar(context, repo, note);
     ScaffoldMessenger.of(context)
       ..removeCurrentSnackBar()
       ..showSnackBar(snackBar);
@@ -118,9 +107,9 @@ Future<void> openNoteEditor(
 }
 
 bool openNewNoteEditor(BuildContext context, String noteSpec) {
-  var rootFolder = Provider.of<NotesFolderFS>(context, listen: false);
+  var rootFolder = context.read<NotesFolderFS>();
   var parentFolder = rootFolder;
-  var folderConfig = Provider.of<NotesFolderConfig>(context, listen: false);
+  var folderConfig = context.read<NotesFolderConfig>();
   var defaultEditor = folderConfig.defaultEditor.toEditorType();
 
   var fileName = noteSpec;
@@ -147,7 +136,7 @@ bool openNewNoteEditor(BuildContext context, String noteSpec) {
     AppRoute.NewNotePrefix + folderConfig.defaultEditor.toInternalString(),
   );
 
-  var _ = Navigator.push(context, route);
+  Navigator.push(context, route);
   return true;
 }
 

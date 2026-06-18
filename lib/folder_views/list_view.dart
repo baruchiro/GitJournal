@@ -5,9 +5,6 @@
  */
 
 import 'package:flutter/material.dart';
-
-import 'package:provider/provider.dart';
-
 import 'package:gitjournal/core/folder/notes_folder.dart';
 import 'package:gitjournal/core/note.dart';
 import 'package:gitjournal/core/notes/note.dart';
@@ -15,6 +12,8 @@ import 'package:gitjournal/repository.dart';
 import 'package:gitjournal/settings/settings.dart';
 import 'package:gitjournal/utils/utils.dart';
 import 'package:gitjournal/widgets/icon_dismissable.dart';
+import 'package:provider/provider.dart';
+
 import 'empty_text_sliver.dart';
 
 typedef NoteTileBuilder = Widget Function(
@@ -99,7 +98,7 @@ class _FolderListViewState extends State<FolderListView> {
       if (i == -1) {
         return _buildNote(note, widget.isNoteSelected(note), animation);
       } else {
-        var _ = _deletedViaDismissed.removeAt(i);
+        _deletedViaDismissed.removeAt(i);
         return Container();
       }
     });
@@ -143,7 +142,7 @@ class _FolderListViewState extends State<FolderListView> {
     bool selected,
     Animation<double> animation,
   ) {
-    var settings = Provider.of<Settings>(context);
+    var settings = context.watch<Settings>();
     Widget viewItem = Hero(
       tag: note.filePath,
       child: widget.noteTileBuilder(context, note, selected),
@@ -165,10 +164,10 @@ class _FolderListViewState extends State<FolderListView> {
         onDismissed: (direction) {
           _deletedViaDismissed.add(note.filePath);
 
-          var stateContainer = context.read<GitJournalRepo>();
-          stateContainer.removeNote(note);
+          var repo = context.read<GitJournalRepo>();
+          repo.removeNote(note);
 
-          var snackBar = buildUndoDeleteSnackbar(context, stateContainer, note);
+          var snackBar = buildUndoDeleteSnackbar(context, repo, note);
           ScaffoldMessenger.of(context)
             ..removeCurrentSnackBar()
             ..showSnackBar(snackBar);

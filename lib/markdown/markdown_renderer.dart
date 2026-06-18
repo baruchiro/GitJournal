@@ -40,7 +40,7 @@ class MarkdownRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
-    var settings = Provider.of<Settings>(context);
+    var settings = context.watch<Settings>();
     theme = theme.copyWith(
       textTheme: theme.textTheme.copyWith(
         titleMedium: theme.textTheme.titleMedium,
@@ -54,14 +54,16 @@ class MarkdownRenderer extends StatelessWidget {
     var markdownStyleSheet = MarkdownStyleSheet.fromTheme(theme).copyWith(
       p: NoteBodyEditor.textStyle(context),
       code: theme.textTheme.bodyMedium!.copyWith(
-        backgroundColor: theme.dialogBackgroundColor,
+        backgroundColor: theme.dialogTheme.backgroundColor,
         fontFamily: 'monospace',
         fontSize: theme.textTheme.bodyMedium!.fontSize! * 0.85,
       ),
       tableBorder: TableBorder.all(color: theme.highlightColor, width: 0),
-      tableCellsDecoration: BoxDecoration(color: theme.dialogBackgroundColor),
+      tableCellsDecoration: BoxDecoration(
+        color: theme.dialogTheme.backgroundColor,
+      ),
       codeblockDecoration: BoxDecoration(
-        color: theme.dialogBackgroundColor,
+        color: theme.dialogTheme.backgroundColor,
         borderRadius: BorderRadius.circular(2.0),
       ),
       horizontalRuleDecoration: BoxDecoration(
@@ -105,7 +107,7 @@ class MarkdownRenderer extends StatelessWidget {
 
         // External Link
         try {
-          var _ = await launchUrl(
+          await launchUrl(
             Uri.parse(link),
             mode: LaunchMode.externalApplication,
           );

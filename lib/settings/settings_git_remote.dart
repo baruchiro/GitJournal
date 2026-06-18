@@ -13,6 +13,7 @@ import 'package:gitjournal/logger/logger.dart';
 import 'package:gitjournal/repository.dart';
 import 'package:gitjournal/settings/git_config.dart';
 import 'package:gitjournal/settings/settings.dart';
+import 'package:gitjournal/settings/settings_git_remote_host.dart';
 import 'package:gitjournal/settings/storage_config.dart';
 import 'package:gitjournal/settings/widgets/settings_list_preference.dart';
 import 'package:gitjournal/ssh/keygen.dart';
@@ -33,24 +34,14 @@ class GitRemoteSettingsScreen extends StatefulWidget {
 
 class _GitRemoteSettingsScreenState extends State<GitRemoteSettingsScreen> {
   var branches = <String>[];
-  var remoteHost = "";
   var currentBranch = "";
 
   @override
   Widget build(BuildContext context) {
     var textTheme = Theme.of(context).textTheme;
-    var settings = Provider.of<Settings>(context);
-    var gitConfig = Provider.of<GitConfig>(context);
-    var repo = Provider.of<GitJournalRepo>(context);
-
-    if (remoteHost.isEmpty) {
-      repo.remoteConfigs().then((list) {
-        setState(() {
-          if (!mounted) return;
-          remoteHost = list.first.url;
-        });
-      });
-    }
+    var settings = context.watch<Settings>();
+    var gitConfig = context.watch<GitConfig>();
+    var repo = context.watch<GitJournalRepo>();
 
     if (branches.isEmpty) {
       currentBranch = repo.currentBranch ?? "";
@@ -65,20 +56,14 @@ class _GitRemoteSettingsScreenState extends State<GitRemoteSettingsScreen> {
     var body = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        if (remoteHost.isNotEmpty)
-          Text(
-            context.loc.settingsGitRemoteHost,
-            style: textTheme.bodyLarge,
-            textAlign: TextAlign.left,
-          ),
-        if (remoteHost.isNotEmpty) ListTile(title: Text(remoteHost)),
+        const GitRemoteHost(),
         if (branches.isNotEmpty)
           ListPreference(
             title: context.loc.settingsGitRemoteBranch,
             currentOption: currentBranch, // FIXME
             options: branches,
             onChange: (String branch) {
-              var _ = repo.checkoutBranch(branch);
+              repo.checkoutBranch(branch);
               setState(() {
                 currentBranch = branch;
               });
@@ -130,21 +115,21 @@ class _GitRemoteSettingsScreenState extends State<GitRemoteSettingsScreen> {
           onPressed: _reconfigureGitHost,
         ),
         FutureBuilderWithProgress(future: () async {
-          var repo = context.watch<GitJournalRepo>();
-          var result = await repo.canResetHard();
-          if (result.isFailure) {
-            showResultError(context, result);
-            return const SizedBox();
-          }
-          var canReset = result.getOrThrow();
-          if (!canReset) {
-            return const SizedBox();
-          }
+          try {
+            var repo = context.watch<GitJournalRepo>();
+            var canReset = await repo.canResetHard();
+            if (!canReset) {
+              return const SizedBox();
+            }
 
-          return RedButton(
-            text: context.loc.settingsGitRemoteResetHardTitle,
-            onPressed: _resetGitHost,
-          );
+            return RedButton(
+              text: context.loc.settingsGitRemoteResetHardTitle,
+              onPressed: _resetGitHost,
+            );
+          } catch (ex, st) {
+            Log.e("SettingsGitRemote", ex: ex, stacktrace: st);
+            return const SizedBox();
+          }
         }()),
       ],
     );
@@ -181,11 +166,11 @@ class _GitRemoteSettingsScreenState extends State<GitRemoteSettingsScreen> {
       ),
       settings: const RouteSettings(name: '/settings/gitRemote/customKeys'),
     );
-    var _ = Navigator.push(context, route);
+    Navigator.push(context, route);
   }
 
   void _updateKeys(String publicKey, String privateKey, String password) {
-    var config = Provider.of<GitConfig>(context, listen: false);
+    var config = context.read<GitConfig>();
 
     if (publicKey.isEmpty || privateKey.isEmpty) {
       return;
@@ -206,12 +191,13 @@ class _GitRemoteSettingsScreenState extends State<GitRemoteSettingsScreen> {
 
   void _generateSshKey(BuildContext context) {
     var keyType = context.read<GitConfig>().sshKeyType;
-    var comment = "GitJournal-${Platform.operatingSystem}-${DateTime.now().toIso8601String().substring(0, 10)}"; // only the date
+    var comment =
+        "GitJournal-${Platform.operatingSystem}-${DateTime.now().toIso8601String().substring(0, 10)}"; // only the date
 
     GitJournalKeygen()
         .generate(type: keyType, comment: comment)
         .then((SshKey? sshKey) {
-      var config = Provider.of<GitConfig>(context, listen: false);
+      var config = context.read<GitConfig>();
       config.sshPublicKey = sshKey!.publicKey;
       config.sshPrivateKey = sshKey.publicKey;
       config.sshPassword = sshKey.password;
@@ -243,15 +229,18 @@ class _GitRemoteSettingsScreenState extends State<GitRemoteSettingsScreen> {
     while (true) {
       var repoFolderPath = p.join(gitDir, "$repoFolderName$num");
       if (!Directory(repoFolderPath).existsSync()) {
-        var r = await repo.init(repoFolderPath);
-        showResultError(context, r);
+        try {
+          await repo.init(repoFolderPath);
+        } catch (ex) {
+          showErrorSnackbar(context, ex);
+        }
         break;
       }
       num++;
     }
     repoFolderName = repoFolderName + num.toString();
 
-    var storageConfig = Provider.of<StorageConfig>(context, listen: false);
+    var storageConfig = context.read<StorageConfig>();
     storageConfig.folderName = repoFolderName;
     storageConfig.storeInternally = true;
     await storageConfig.save();
@@ -263,7 +252,7 @@ class _GitRemoteSettingsScreenState extends State<GitRemoteSettingsScreen> {
       ),
       settings: const RouteSettings(name: '/setupRemoteGit'),
     );
-    var _ = await Navigator.push(context, route);
+    await Navigator.push(context, route);
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
@@ -279,9 +268,12 @@ class _GitRemoteSettingsScreenState extends State<GitRemoteSettingsScreen> {
       return;
     }
 
-    var repo = context.read<GitJournalRepo>();
-    var result = await repo.resetHard();
-    showResultError(context, result);
+    try {
+      var repo = context.read<GitJournalRepo>();
+      await repo.resetHard();
+    } catch (ex) {
+      showErrorSnackbar(context, ex);
+    }
 
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
@@ -300,7 +292,7 @@ class Button extends StatelessWidget {
       child: ElevatedButton(
         style: ButtonStyle(
           backgroundColor:
-              MaterialStateProperty.all<Color>(Theme.of(context).primaryColor),
+              WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
         ),
         onPressed: onPressed,
         child: Text(
@@ -325,7 +317,7 @@ class RedButton extends StatelessWidget {
       width: double.infinity,
       child: ElevatedButton(
         style: ButtonStyle(
-          backgroundColor: MaterialStateProperty.all<Color>(Colors.red),
+          backgroundColor: WidgetStateProperty.all<Color>(Colors.red),
         ),
         onPressed: onPressed,
         child: Text(text, textAlign: TextAlign.center),

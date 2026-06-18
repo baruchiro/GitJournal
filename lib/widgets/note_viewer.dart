@@ -5,10 +5,6 @@
  */
 
 import 'package:flutter/material.dart';
-
-import 'package:org_flutter/org_flutter.dart';
-import 'package:provider/provider.dart';
-
 import 'package:gitjournal/core/folder/notes_folder.dart';
 import 'package:gitjournal/core/folder/notes_folder_fs.dart';
 import 'package:gitjournal/core/note.dart';
@@ -20,6 +16,8 @@ import 'package:gitjournal/folder_views/common.dart';
 import 'package:gitjournal/logger/logger.dart';
 import 'package:gitjournal/markdown/markdown_renderer.dart';
 import 'package:gitjournal/widgets/notes_backlinks.dart';
+import 'package:org_flutter/org_flutter.dart';
+import 'package:provider/provider.dart';
 
 class NoteViewer extends StatelessWidget {
   final Note note;
@@ -37,9 +35,9 @@ class NoteViewer extends StatelessWidget {
 
       return Org(
         note.body,
-        onLinkTap: handler.launchUrl,
-        onLocalSectionLinkTap: (OrgSection section) {
-          Log.d("local section link: $section");
+        onLinkTap: (link) => handler.launchUrl(link.location),
+        onLocalSectionLinkTap: (OrgTree tree) {
+          Log.d("local tree link: $tree");
         },
         onSectionLongPress: (OrgSection section) {
           Log.d('local section long-press: ${section.headline.rawTitle!}');
@@ -47,7 +45,7 @@ class NoteViewer extends StatelessWidget {
       );
     }
 
-    final rootFolder = Provider.of<NotesFolderFS>(context);
+    final rootFolder = context.watch<NotesFolderFS>();
     var view = EditorScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

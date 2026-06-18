@@ -2,54 +2,127 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-name: Android
+name: Build APK
 
 on:
   push:
     branches:
       - master
+  workflow_dispatch:
+
+permissions:
+  contents: write # required to publish the APK as a GitHub Release
 
 jobs:
   Build:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
-        uses: actions/checkout@v3
+      - name: Free up disk space
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android/sdk/ndk || true
+
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-java@v2
+
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
-          java-version: '11'
+          distribution: "zulu"
+          java-version: "17"
+
+      - name: Get Flutter version from pubspec
+        run: |
+          set -e
+          FLUTTER_VERSION=$(grep 'flutter:' pubspec.yaml | head -n 1 | awk '{ print $2 }' | tr -d '"' | cut -d "=" -f 2)
+          echo "FLUTTER_VERSION=${FLUTTER_VERSION}" >> "$GITHUB_ENV"
+
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.13.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
 
-      - name: Build Number
+      - name: Generate env file
+        run: |
+          # scripts/setup_env.dart reads secrets/env.json, which is git-crypt
+          # encrypted and unavailable here, so it would emit an empty Env class
+          # and the build would fail on Env.sentry. Write a minimal stub
+          # instead. An empty Sentry DSN simply disables crash reporting.
+          cat > lib/.env.dart <<'EOF'
+          class Env {
+            static const String sentry = "";
+          }
+          EOF
+
+      - name: Get dependencies
+        run: flutter pub get --suppress-analytics
+
+      # Builds a *release* APK, which must be signed to be installable.
+      # If a KEYSTORE_BASE64 repository secret is present we sign with it
+      # (recommended: lets you upgrade the app in place across builds).
+      # Otherwise we generate a throw-away keystore so the build still works
+      # with zero setup -- but you will have to uninstall/reinstall to update,
+      # since the signing key changes on every run.
+      - name: Set up signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -e
+          # Gradle reads rootProject.file('secrets/key.properties'), which
+          # resolves to android/secrets/ (the Gradle root is the android dir).
+          # The tracked files there are git-crypt encrypted, so overwrite them.
+          mkdir -p android/secrets
+          KEYSTORE_PATH="$(pwd)/android/secrets/keystore.jks"
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Signing with keystore from repository secrets."
+            echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
+            STORE_PASS="$KEYSTORE_PASSWORD"
+            ALIAS="${KEY_ALIAS:-gitjournal}"
+            KEY_PASS="${KEY_PASSWORD:-$KEYSTORE_PASSWORD}"
+          else
+            echo "No KEYSTORE_BASE64 secret found - generating an ephemeral keystore."
+            rm -f "$KEYSTORE_PATH"
+            keytool -genkeypair -v -keystore "$KEYSTORE_PATH" \
+              -storepass android -keypass android -alias gitjournal \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=GitJournal Pro, OU=Personal, O=Personal, L=, S=, C=US"
+            STORE_PASS="android"
+            ALIAS="gitjournal"
+            KEY_PASS="android"
+          fi
+          {
+            echo "storeFile=${KEYSTORE_PATH}"
+            echo "storePassword=${STORE_PASS}"
+            echo "keyAlias=${ALIAS}"
+            echo "keyPassword=${KEY_PASS}"
+          } > android/secrets/key.properties
+
+      - name: Build number
         id: buildnumber
-        run: echo "BUILD_NUM=$(git rev-list --count HEAD)" >> $GITHUB_OUTPUT
-      - name: build
-        env:
-          BUILD_NUM: ${{ steps.buildnumber.outputs.BUILD_NUM }}
-        run: flutter build apk --flavor dev --debug --build-number="$BUILD_NUM" --dart-define=INSTALL_SOURCE=fdroid
-      - name: rename
-        env:
-          BUILD_NUM: ${{ steps.buildnumber.outputs.BUILD_NUM }}
-        run: cp build/app/outputs/flutter-apk/app-dev-debug.apk baruchiro.gitjournal_$BUILD_NUM.apk
-      - name: release
-        uses: softprops/action-gh-release@v1
+        run: echo "BUILD_NUM=$(git rev-list --count HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Build APK
+        run: |
+          flutter build apk --flavor prod --release \
+            --build-number="${{ steps.buildnumber.outputs.BUILD_NUM }}" \
+            --dart-define=INSTALL_SOURCE=fdroid
+          cp build/app/outputs/flutter-apk/app-prod-release.apk \
+            "gitjournal-pro_${{ steps.buildnumber.outputs.BUILD_NUM }}.apk"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          files: baruchiro.gitjournal_${{ steps.buildnumber.outputs.BUILD_NUM }}.apk
-          name: ${{ steps.buildnumber.outputs.BUILD_NUM }}
+          name: gitjournal-pro-apk
+          path: gitjournal-pro_*.apk
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: gitjournal-pro_${{ steps.buildnumber.outputs.BUILD_NUM }}.apk
+          name: Build ${{ steps.buildnumber.outputs.BUILD_NUM }}
           tag_name: v${{ steps.buildnumber.outputs.BUILD_NUM }}
           fail_on_unmatched_files: true
-      # - name: Build
-      #   run: ./scripts/build_android.sh
-      # - name: "Upload Artifact"
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: APK
-      #     path: "*.apk"
-      #     if-no-files-found: error
-      # - name: Publish Alpha
-      #   run: cd android && fastlane alphaBuild

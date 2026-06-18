@@ -25,7 +25,7 @@ class SettingsDisplayImagesCaptionScreenState
   final doCaptionTagsKey = GlobalKey<FormFieldState<String>>();
   @override
   Widget build(BuildContext context) {
-    var settings = Provider.of<MarkdownRendererConfig>(context);
+    var settings = context.watch<MarkdownRendererConfig>();
     void saveDoNotCaptionTag(String? doNotCaptionTags) {
       if (doNotCaptionTags == null) {
         return;
@@ -76,7 +76,7 @@ class SettingsDisplayImagesCaptionScreenState
       }
       settings.doCaptionTags = parseTags(doCaptionTags);
       settings.save();
-      var _ = doNotCaptionTagsForm.createState();
+      doNotCaptionTagsForm.createState();
     };
     var doCaptionTagsForm = Form(
       child: TextFormField(

@@ -6,7 +6,6 @@
 
 import 'dart:async';
 
-import 'package:auto_updater/auto_updater.dart';
 import 'package:flutter/material.dart';
 import 'package:gitjournal/analytics/analytics.dart';
 import 'package:gitjournal/analytics/route_observer.dart';
@@ -66,15 +65,9 @@ class JournalApp extends StatefulWidget {
     );
 
     // Ignore the error, the router will show an error screen
-    var _ = await repoManager.buildActiveRepository();
+    await repoManager.buildActiveRepository();
 
     GitJournalInAppPurchases.confirmProPurchaseBoot();
-
-    if (Platform.isMacOS) {
-      var feedURL = 'http://gitjournal.io/sparkle/appcast.xml';
-      await autoUpdater.setFeedURL(feedURL);
-      await autoUpdater.checkForUpdates();
-    }
 
     runApp(
       GitJournalChangeNotifiers(
@@ -93,7 +86,7 @@ class JournalApp extends StatefulWidget {
   ) async {
     var supportDir = await getApplicationSupportDirectory();
     var analyticsStorage = p.join(supportDir.path, 'analytics');
-    var _ = await Directory(analyticsStorage).create(recursive: true);
+    await Directory(analyticsStorage).create(recursive: true);
 
     var analytics = await Analytics.init(
       pref: pref,
@@ -143,7 +136,7 @@ class JournalAppState extends State<JournalApp> {
         });
         return;
       }
-      var _ = _navigatorKey.currentState!
+      _navigatorKey.currentState!
           .pushNamed(AppRoute.NewNotePrefix + shortcutType);
 
       quickActions.setShortcutItems(<ShortcutItem>[
@@ -171,7 +164,7 @@ class JournalAppState extends State<JournalApp> {
   void _afterBuild(BuildContext context) {
     if (_pendingShortcut != null) {
       var routeName = AppRoute.NewNotePrefix + _pendingShortcut!;
-      var _ = _navigatorKey.currentState!.pushNamed(routeName);
+      _navigatorKey.currentState!.pushNamed(routeName);
       _pendingShortcut = null;
     }
   }
@@ -183,24 +176,45 @@ class JournalAppState extends State<JournalApp> {
       return;
     }
 
-    var folderConfig = Provider.of<NotesFolderConfig>(context, listen: false);
+    var folderConfig = context.read<NotesFolderConfig>();
     var editor = folderConfig.defaultEditor.toInternalString();
-    var _ =
-        _navigatorKey.currentState!.pushNamed(AppRoute.NewNotePrefix + editor);
+    _navigatorKey.currentState!.pushNamed(AppRoute.NewNotePrefix + editor);
   }
 
   @visibleForTesting
-  void handleSharedImages(Iterable<String> images) {
-    _sharedImages = images.toList();
-    WidgetsBinding.instance.addPostFrameCallback(_handleShare);
-  }
+  void handleSharedMedia(Iterable<SharedMediaFile> media) {
+    _sharedImages = [];
+    _sharedText = "";
 
-  @visibleForTesting
-  void handleSharedText(String? value) {
-    if (value == null) return;
-    if (value.startsWith('gitjournal-identity://')) return;
+    // if (value.startsWith('gitjournal-identity://')) return;
 
-    _sharedText = value;
+    for (var m in media) {
+      switch (m.type) {
+        case SharedMediaType.image:
+          Log.d("Received Image Share $m");
+          _sharedImages.add(m.path);
+          break;
+        case SharedMediaType.video:
+          Log.d("Received Video Share $m");
+          Log.d("Video sharing is not supported");
+          break;
+        case SharedMediaType.url:
+          Log.d("Received URL Share $m");
+          _sharedText =
+              _sharedText.isEmpty ? m.path : "$_sharedText\n${m.path}";
+          break;
+        case SharedMediaType.text:
+          Log.d("Received Text Share $m");
+          _sharedText =
+              _sharedText.isEmpty ? m.path : "$_sharedText\n${m.path}";
+          break;
+        case SharedMediaType.file:
+          Log.d("Received File Share $m");
+          Log.d("File sharing is not supported");
+          break;
+      }
+      Log.d("Received Media Share $m");
+    }
     WidgetsBinding.instance.addPostFrameCallback(_handleShare);
   }
 
@@ -209,35 +223,23 @@ class JournalAppState extends State<JournalApp> {
       return;
     }
 
-    // For sharing images coming from outside the app while the app is in the memory
-    _intentDataStreamSubscription = ReceiveSharingIntent.getMediaStream()
+    // For sharing text and images coming from outside the app while the app is in the memory
+    _intentDataStreamSubscription = ReceiveSharingIntent.instance
+        .getMediaStream()
         .listen((List<SharedMediaFile> value) {
       Log.d("Received Media Share $value");
-      handleSharedImages(value.map((f) => f.path));
+      handleSharedMedia(value);
     }, onError: (err) {
       Log.e("getIntentDataStream error: $err");
     });
 
-    // For sharing images coming from outside the app while the app is closed
-    ReceiveSharingIntent.getInitialMedia().then((List<SharedMediaFile> value) {
+    // For sharing text and images coming from outside the app while the app is closed
+    ReceiveSharingIntent.instance
+        .getInitialMedia()
+        .then((List<SharedMediaFile> value) {
       Log.d("Received MediaFile Share with App (media): $value");
-      handleSharedImages(value.map((f) => f.path));
-    });
 
-    // For sharing or opening text coming from outside the app while the app is in the memory
-    _intentDataStreamSubscription =
-        ReceiveSharingIntent.getTextStream().listen((String value) {
-      Log.d("Received Text Share: ${value.length}");
-      handleSharedText(value);
-    }, onError: (err) {
-      Log.e("getLinkStream error: $err");
-    });
-
-    // For sharing or opening text coming from outside the app while the app is closed
-    ReceiveSharingIntent.getInitialText().then((String? value) {
-      if (value == null) return;
-      Log.d("Received Share with App (text): ${value.length}");
-      handleSharedText(value);
+      handleSharedMedia(value);
     });
   }
 
@@ -256,7 +258,7 @@ class JournalAppState extends State<JournalApp> {
     // FIXME: Make Settings not depend on Repository
     late Settings settings;
     try {
-      settings = Provider.of<Settings>(context);
+      settings = context.watch<Settings>();
     } catch (_) {
       return const SizedBox();
     }
@@ -267,8 +269,8 @@ class JournalAppState extends State<JournalApp> {
     var themeMode = ThemeMode.system;
 
     if (repo != null) {
-      var appConfig = Provider.of<AppConfig>(context);
-      var storageConfig = Provider.of<StorageConfig>(context);
+      var appConfig = context.watch<AppConfig>();
+      var storageConfig = context.watch<StorageConfig>();
 
       router = AppRouter(
         settings: settings,

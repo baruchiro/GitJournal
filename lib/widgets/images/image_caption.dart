@@ -22,7 +22,7 @@ class ImageCaption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final settings = Provider.of<MarkdownRendererConfig>(context);
+    final settings = context.watch<MarkdownRendererConfig>();
 
     final text = captionText(context, altText, tooltip);
 
@@ -38,7 +38,7 @@ class ImageCaption extends StatelessWidget {
       final overflown = (TextPainter(
               text: TextSpan(text: text),
               maxLines: 2,
-              textScaleFactor: MediaQuery.of(context).textScaleFactor,
+              textScaler: MediaQuery.of(context).textScaler,
               textDirection: Directionality.of(context))
             ..layout(maxWidth: maxWidth - 2 * (padding + margin)))
           .didExceedMaxLines;
@@ -74,7 +74,7 @@ class ImageCaption extends StatelessWidget {
           padding: const EdgeInsets.all(margin),
           child: GestureDetector(
             onTap: () {
-              var _ = Navigator.push(
+              Navigator.push(
                 context,
                 HeroDialogRoute(builder: (context) {
                   return Dialog(
@@ -109,7 +109,7 @@ bool shouldCaption(BuildContext context, String altText, String tooltip) {
 }
 
 String captionText(BuildContext context, String altText, String tooltip) {
-  final settings = Provider.of<MarkdownRendererConfig>(context);
+  final settings = context.watch<MarkdownRendererConfig>();
 
   bool altTextCaption =
       settings.useAsCaption == SettingsImageTextType.AltTool ||
@@ -144,7 +144,7 @@ String captionText(BuildContext context, String altText, String tooltip) {
 }
 
 String _cleanCaption(BuildContext context, String caption) {
-  final settings = Provider.of<MarkdownRendererConfig>(context);
+  final settings = context.watch<MarkdownRendererConfig>();
   final tags = [
     ...settings.doThemeTags,
     ...settings.doNotThemeTags,
@@ -162,8 +162,8 @@ String _cleanCaption(BuildContext context, String caption) {
       .trim();
 }
 
-Color _overlayBackgroundColor(context) {
-  final settings = Provider.of<MarkdownRendererConfig>(context);
+Color _overlayBackgroundColor(BuildContext context) {
+  final settings = context.watch<MarkdownRendererConfig>();
   final theme = Theme.of(context);
   return settings.transparentCaption
       ? (theme.brightness == Brightness.dark ? Colors.black : Colors.white)

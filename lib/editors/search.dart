@@ -143,7 +143,7 @@ class _EditorAppSearchBarState extends State<EditorAppSearchBar> {
         IconButton(
           icon: const Icon(Icons.close),
           onPressed: () {
-            var _ = widget.editorState.search(null);
+            widget.editorState.search(null);
             widget.onCloseSelected();
           },
         ),
@@ -243,6 +243,6 @@ void scrollToSearchResult({
   scrollController.animateTo(
     newPosition,
     duration: const Duration(milliseconds: 300),
-    curve: decelerateEasing,
+    curve: Easing.legacyDecelerate,
   );
 }

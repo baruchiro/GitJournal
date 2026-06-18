@@ -9,8 +9,6 @@ import 'dart:async';
 import 'package:badges/badges.dart' as badges;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:git_bindings/git_bindings.dart';
-import 'package:gitjournal/l10n.dart';
 import 'package:gitjournal/repository.dart';
 import 'package:gitjournal/sync_attempt.dart';
 import 'package:gitjournal/utils/utils.dart';
@@ -45,7 +43,7 @@ class _SyncButtonState extends State<SyncButton> {
 
   @override
   Widget build(BuildContext context) {
-    final repo = Provider.of<GitJournalRepo>(context);
+    final repo = context.watch<GitJournalRepo>();
 
     if (_connectivity == ConnectivityResult.none) {
       return GitPendingChangesBadge(
@@ -102,20 +100,15 @@ class _SyncButtonState extends State<SyncButton> {
 
   Future<void> _syncRepo() async {
     try {
-      final repo = Provider.of<GitJournalRepo>(context, listen: false);
+      final repo = context.read<GitJournalRepo>();
       await repo.syncNotes();
-    } on GitException catch (e) {
-      showErrorMessageSnackbar(
-        context,
-        context.loc.widgetsSyncButtonError(e.cause),
-      );
     } catch (e) {
       showErrorSnackbar(context, e);
     }
   }
 
   IconData _syncStatusIcon() {
-    final repo = Provider.of<GitJournalRepo>(context);
+    final repo = context.watch<GitJournalRepo>();
     switch (repo.syncStatus) {
       case SyncStatus.Error:
         return Icons.cloud_off;
@@ -156,7 +149,7 @@ class _BlinkingIconState extends State<BlinkingIcon>
       curve: Curves.linear,
     );
 
-    var _ = _controller.repeat(reverse: true);
+    _controller.repeat(reverse: true);
   }
 
   @override
@@ -188,7 +181,7 @@ class GitPendingChangesBadge extends StatelessWidget {
       color: darkMode ? Colors.black : Colors.white,
     );
 
-    final repo = Provider.of<GitJournalRepo>(context);
+    final repo = context.watch<GitJournalRepo>();
 
     return badges.Badge(
       badgeContent: Text(repo.numChanges.toString(), style: style),

@@ -10,7 +10,7 @@ import MobileCoreServices
 import Photos
 
 class ShareViewController: SLComposeServiceViewController {
-    let hostAppBundleIdentifier = "baruchiro.gitjournal"
+    let hostAppBundleIdentifier = "io.gitjournal.gitjournal"
     let sharedKey = "ShareKey"
     var sharedMedia: [SharedMediaFile] = []
     var sharedText: [String] = []

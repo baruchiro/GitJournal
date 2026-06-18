@@ -71,7 +71,7 @@ class GitJournalInAppPurchases {
         Log.i("Pending Complete Purchase - ${pd.productID}");
 
         try {
-          var _ = await iapCon.completePurchase(pd);
+          await iapCon.completePurchase(pd);
         } catch (e, stackTrace) {
           logException(e, stackTrace);
         }
@@ -141,6 +141,8 @@ class SubscriptionStatus {
 }
 
 Future<SubscriptionStatus> verifyPurchase(PurchaseDetails purchase) async {
+  // GitJournal Pro fork: skip server-side receipt verification and always
+  // grant Pro.
   // var dt = await getExpiryDate(
   //   purchase.verificationData.serverVerificationData,
   //   purchase.productID,

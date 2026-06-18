@@ -5,7 +5,6 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:git_bindings/git_bindings.dart';
 import 'package:gitjournal/analytics/analytics.dart';
 import 'package:gitjournal/app_router.dart';
 import 'package:gitjournal/core/folder/filtered_notes_folder.dart';
@@ -156,7 +155,7 @@ class _FolderViewState extends State<FolderView> {
       );
     }
 
-    var settings = Provider.of<Settings>(context);
+    var settings = context.watch<Settings>();
     final showButtomMenuBar = settings.bottomMenuBar;
 
     // So the FAB doesn't hide parts of the last entry
@@ -221,7 +220,7 @@ class _FolderViewState extends State<FolderView> {
     var i = _selectedNotes.indexOf(note);
     if (i != -1) {
       setState(() {
-        var _ = _selectedNotes.removeAt(i);
+        _selectedNotes.removeAt(i);
       });
     } else {
       setState(() {
@@ -239,7 +238,7 @@ class _FolderViewState extends State<FolderView> {
     var i = _selectedNotes.indexOf(note);
     if (i != -1) {
       setState(() {
-        var _ = _selectedNotes.removeAt(i);
+        _selectedNotes.removeAt(i);
       });
     } else {
       setState(() {
@@ -257,7 +256,7 @@ class _FolderViewState extends State<FolderView> {
       child: const Icon(Icons.add),
     );
 
-    var settings = Provider.of<Settings>(context);
+    var settings = context.watch<Settings>();
     final showButtomMenuBar = settings.bottomMenuBar;
 
     return Scaffold(
@@ -273,8 +272,8 @@ class _FolderViewState extends State<FolderView> {
   }
 
   Future<void> _newPost(EditorType editorType) async {
-    var settings = Provider.of<Settings>(context, listen: false);
-    var rootFolder = Provider.of<NotesFolderFS>(context, listen: false);
+    var settings = context.read<Settings>();
+    var rootFolder = context.read<NotesFolderFS>();
 
     var folder = widget.notesFolder;
     var fsFolder = folder.fsFolder as NotesFolderFS;
@@ -331,7 +330,7 @@ class _FolderViewState extends State<FolderView> {
       ),
       AppRoute.NewNotePrefix + routeType,
     );
-    var _ = await Navigator.push(context, route);
+    await Navigator.push(context, route);
     ScaffoldMessenger.of(context).removeCurrentSnackBar();
   }
 
@@ -358,7 +357,7 @@ class _FolderViewState extends State<FolderView> {
   }
 
   Future<void> _configureViewButtonPressed() async {
-    var _ = await showDialog<SortingMode>(
+    await showDialog<SortingMode>(
       context: context,
       builder: _viewDialog,
     );
@@ -422,7 +421,7 @@ class _FolderViewState extends State<FolderView> {
   }
 
   List<Widget> _buildNoteActions() {
-    final repo = Provider.of<GitJournalRepo>(context);
+    final repo = context.watch<GitJournalRepo>();
 
     var extraActions = PopupMenuButton<DropDownChoices>(
       key: const ValueKey("PopupMenu"),
@@ -463,7 +462,7 @@ class _FolderViewState extends State<FolderView> {
         icon: const Icon(Icons.search),
         onPressed: () {
           logEvent(Event.SearchButtonPressed);
-          var _ = showSearch(
+          showSearch(
             context: context,
             delegate: NoteSearchDelegate(
               _sortedNotesFolder!.notes,
@@ -513,7 +512,7 @@ class _FolderViewState extends State<FolderView> {
   }
 
   Future<void> _deleteSelectedNotes() async {
-    var settings = Provider.of<Settings>(context, listen: false);
+    var settings = context.read<Settings>();
     var shouldDelete = true;
     if (settings.confirmDelete) {
       shouldDelete = (await showDialog(
@@ -536,9 +535,12 @@ class _FolderViewState extends State<FolderView> {
       builder: (context) => FolderSelectionDialog(),
     );
     if (destFolder != null) {
-      var repo = context.read<GitJournalRepo>();
-      var r = await repo.moveNotes(_selectedNotes, destFolder);
-      showResultError(context, r);
+      try {
+        var repo = context.read<GitJournalRepo>();
+        await repo.moveNotes(_selectedNotes, destFolder);
+      } catch (ex) {
+        showErrorSnackbar(context, ex);
+      }
     }
 
     _resetSelection();
@@ -572,11 +574,6 @@ Future<void> syncRepo(BuildContext context) async {
   try {
     var container = context.read<GitJournalRepo>();
     await container.syncNotes();
-  } on GitException catch (e) {
-    showErrorMessageSnackbar(
-      context,
-      context.loc.widgetsFolderViewSyncError(e.cause),
-    );
   } catch (e) {
     showErrorSnackbar(context, e);
   }

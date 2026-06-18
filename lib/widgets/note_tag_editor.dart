@@ -72,6 +72,7 @@ class _NoteTagEditorState extends State<NoteTagEditor> {
       ),
     );
 
+    // ignore: deprecated_member_use
     return WillPopScope(
       onWillPop: () async {
         Navigator.of(context).pop(_selectedTags);
@@ -124,7 +125,6 @@ class _NoteTagEditorState extends State<NoteTagEditor> {
 
   void _addTag(String tag) {
     setState(() {
-      dynamic _;
       _selectedTags = _selectedTags.add(tag);
       _allTags = _allTags.add(tag);
       _textController.text = "";

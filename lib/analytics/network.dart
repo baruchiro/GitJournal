@@ -6,11 +6,11 @@
 
 import 'package:dio/dio.dart';
 import 'package:dio_smart_retry/dio_smart_retry.dart';
-
-import 'package:gitjournal/.env.dart';
 import 'package:gitjournal/logger/logger.dart';
-import 'package:gitjournal/utils/result.dart';
+
 import 'generated/analytics.pb.dart' as pb;
+
+const _analyticsUrl = "https://analytics-wetu2tkdpq-ew.a.run.app/v1/sendData";
 
 final dio = () {
   var d = Dio();
@@ -31,26 +31,18 @@ final dio = () {
   return d;
 }();
 
-Future<Result<void>> sendAnalytics(pb.AnalyticsMessage msg) async {
-  assert(Env.analyticsUrl.isNotEmpty);
-
-  try {
-    final data = msg.writeToBuffer();
-    var _ = await dio.post(
-      Env.analyticsUrl,
-      // vHanda: Send POST data in DIO is so strange. It seems to mess up the data
-      //         if I just pass the Uint8List
-      data: Stream.fromIterable(data.map((e) => [e])),
-      options: Options(
-        contentType: "application/x-protobuf",
-        headers: {
-          Headers.contentLengthHeader: data.lengthInBytes.toString(),
-        },
-      ),
-    );
-  } catch (ex, st) {
-    return Result.fail(ex, st);
-  }
-
-  return Result(null);
+Future<void> sendAnalytics(pb.AnalyticsMessage msg) async {
+  final data = msg.writeToBuffer();
+  await dio.post(
+    _analyticsUrl,
+    // vHanda: Send POST data in DIO is so strange. It seems to mess up the data
+    //         if I just pass the Uint8List
+    data: Stream.fromIterable(data.map((e) => [e])),
+    options: Options(
+      contentType: "application/x-protobuf",
+      headers: {
+        Headers.contentLengthHeader: data.lengthInBytes.toString(),
+      },
+    ),
+  );
 }

@@ -22,7 +22,7 @@ class SettingsTagsScreen extends StatefulWidget {
 class SettingsTagsScreenState extends State<SettingsTagsScreen> {
   @override
   Widget build(BuildContext context) {
-    var folderConfig = Provider.of<NotesFolderConfig>(context);
+    var folderConfig = context.watch<NotesFolderConfig>();
 
     var body = ListView(children: <Widget>[
       SettingsHeader(context.loc.settingsTagsPrefixes),
@@ -32,9 +32,9 @@ class SettingsTagsScreenState extends State<SettingsTagsScreen> {
         onChanged: (bool newVal) {
           setState(() {
             if (newVal) {
-              var _ = folderConfig.inlineTagPrefixes.add('#');
+              folderConfig.inlineTagPrefixes.add('#');
             } else {
-              var _ = folderConfig.inlineTagPrefixes.remove('#');
+              folderConfig.inlineTagPrefixes.remove('#');
             }
             folderConfig.save();
           });
@@ -46,9 +46,9 @@ class SettingsTagsScreenState extends State<SettingsTagsScreen> {
         onChanged: (bool newVal) {
           setState(() {
             if (newVal) {
-              var _ = folderConfig.inlineTagPrefixes.add('@');
+              folderConfig.inlineTagPrefixes.add('@');
             } else {
-              var _ = folderConfig.inlineTagPrefixes.remove('@');
+              folderConfig.inlineTagPrefixes.remove('@');
             }
             folderConfig.save();
           });
@@ -60,9 +60,9 @@ class SettingsTagsScreenState extends State<SettingsTagsScreen> {
         onChanged: (bool newVal) {
           setState(() {
             if (newVal) {
-              var _ = folderConfig.inlineTagPrefixes.add('+');
+              folderConfig.inlineTagPrefixes.add('+');
             } else {
-              var _ = folderConfig.inlineTagPrefixes.remove('+');
+              folderConfig.inlineTagPrefixes.remove('+');
             }
             folderConfig.save();
           });

@@ -9,11 +9,10 @@ export PATH := $(DIR)/.flutter/bin/:$(PATH)
 protos:
 	protoc --dart_out=grpc:lib/analytics/generated -Ilib/analytics/ lib/analytics/analytics.proto
 	protoc --dart_out=grpc:lib/markdown/generated -Ilib/markdown/ lib/markdown/markdown.proto
-	protoc --dart_out=grpc:lib/generated -Iprotos protos/shared_preferences.proto
 	protoc --dart_out=grpc:lib/generated -Iprotos protos/builders.proto
 	protoc --dart_out=grpc:lib/generated -Iprotos protos/core.proto
 	rm lib/analytics/generated/analytics.pbgrpc.dart
-	flutter format lib/
+	dart format lib/
 
 	reuse addheader --license 'AGPL-3.0-or-later' --copyright 'Vishesh Handa <me@vhanda.in>' --year '2021' lib/analytics/generated/*
 	reuse addheader --license 'AGPL-3.0-or-later' --copyright 'Vishesh Handa <me@vhanda.in>' --year '2021' lib/markdown/generated/*
@@ -21,13 +20,8 @@ protos:
 
 	git checkout lib/generated/locale_keys.g.dart
 
-unused:
-	flutter pub run dart_code_metrics:metrics check-unused-files lib
-	flutter pub run dart_code_metrics:metrics check-unused-code lib
-
 lint:
 	flutter analyze
-	flutter pub run dart_code_metrics:metrics lib
 
 build_env:
 	flutter scripts/setup_env.dart gen

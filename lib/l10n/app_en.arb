@@ -128,6 +128,7 @@
   "settingsNoteMetaDataDateFormatIso8601": "ISO 8601",
   "settingsNoteMetaDataDateFormatNone": "None",
   "settingsNoteMetaDataDateFormatUnixTimestamp": "Unix Timestamp",
+  "settingsNoteMetaDataDateFormatYearMonthDay": "YYYY-MM-DD",
   "settingsPrivacy": "Privacy Policy",
   "settingsTerms": "Terms and Conditions",
   "settingsExperimentalTitle": "Experimental Features",
@@ -137,7 +138,6 @@
   "settingsExperimentalAccounts": "Platform Independent Accounts",
   "settingsExperimentalIncludeSubfolders": "Include Subfolders",
   "settingsExperimentalExperimentalGitOps": "Dart-only Git implementation",
-  "settingsExperimentalMerge": "Dart-only merge implementation",
   "settingsExperimentalAutoCompleteTags": "Tags Auto Completion",
   "settingsExperimentalHistory": "History View",
   "settingsEditorsTitle": "Editor Settings",
@@ -297,6 +297,8 @@
   "screensCacheLoadingText": "Reading Git History ...",
   "screensErrorTitle": "Error",
   "screensErrorMessage": "The repo couldn't be opened. Please file a bug and recreate the repo.",
+  "settingsNoRemoteConfigured": "No Git Host Configured",
+  "settingsMultipleGitRemotesNotSupported": "Multiple Git Remotes are not currently supported",
   "widgetsRenameYes": "Rename",
   "widgetsRenameNo": "Cancel",
   "widgetsRenameValidatorEmpty": "Please enter a name",
@@ -377,6 +379,7 @@
       "count": {}
     }
   },
+  "widgetsNotesFolderDeleteDialogTitle": "Do you want to delete this folder and everything inside it?",
   "widgetsNoteDeleteDialogYes": "Delete",
   "widgetsNoteDeleteDialogNo": "No",
   "widgetsNoteEditorRenameFile": "Rename File",
@@ -505,5 +508,8 @@
   "onBoardingSubtitle": "An Open Source Note Taking App built on top of Git",
   "onBoardingPage2": "Your Notes are stored in a standard Markdown + YAML Header format",
   "onBoardingPage3": "Sync your Local Git Repo with any provider",
-  "singleJournalEntry": "Single Journal Entry File per day"
+  "singleJournalEntry": "Single Journal Entry File per day",
+  "exportRepo": "Export Repository",
+  "shareAsZip": "Share as a ZIP file",
+  "failedToExport": "Failed to Export"
 }

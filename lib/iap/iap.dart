@@ -71,7 +71,7 @@ class GitJournalInAppPurchases {
         Log.i("Pending Complete Purchase - ${pd.productID}");
 
         try {
-          var _ = await iapCon.completePurchase(pd);
+          await iapCon.completePurchase(pd);
         } catch (e, stackTrace) {
           logException(e, stackTrace);
         }
@@ -141,22 +141,22 @@ class SubscriptionStatus {
 }
 
 Future<SubscriptionStatus> verifyPurchase(PurchaseDetails purchase) async {
-  // var dt = await getExpiryDate(
-  //   purchase.verificationData.serverVerificationData,
-  //   purchase.productID,
-  //   _isPurchase(purchase),
-  // );
-  // if (dt == null) {
-  //   return SubscriptionStatus.basic();
-  // }
+  var dt = await getExpiryDate(
+    purchase.verificationData.serverVerificationData,
+    purchase.productID,
+    _isPurchase(purchase),
+  );
+  if (dt == null) {
+    return SubscriptionStatus.basic();
+  }
   return SubscriptionStatus.pro();
 }
 
 // Checks if it is a subscription or a purchase
-// bool _isPurchase(PurchaseDetails purchase) {
-//   var sku = purchase.productID;
-//   return !sku.contains('monthly') && !sku.contains('_sub_');
-// }
+bool _isPurchase(PurchaseDetails purchase) {
+  var sku = purchase.productID;
+  return !sku.contains('monthly') && !sku.contains('_sub_');
+}
 
 class IAPVerifyException implements Exception {
   final int code;

@@ -18,7 +18,7 @@ import 'package:gitjournal/widgets/scroll_view_without_animation.dart';
 Set<String> _generateYearlySkus() {
   var list = <String>{};
   for (var i = 0; i <= 20; i++) {
-    var _ = list.add("sku_yearly_$i");
+    list.add("sku_yearly_$i");
   }
   return list;
 }
@@ -54,6 +54,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ignore: deprecated_member_use
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(

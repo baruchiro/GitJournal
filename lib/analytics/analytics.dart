@@ -4,17 +4,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import 'package:flutter/foundation.dart' as foundation;
-
 import 'package:fixnum/fixnum.dart';
-import 'package:flutter_runtime_env/flutter_runtime_env.dart';
+import 'package:flutter/foundation.dart' as foundation;
 import 'package:function_types/function_types.dart';
+import 'package:gitjournal/logger/logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:gitjournal/error_reporting.dart';
-import 'package:gitjournal/logger/logger.dart';
 import 'config.dart';
 import 'controller.dart';
 import 'device_info.dart';
@@ -57,13 +54,14 @@ class Analytics {
     required Func2<String, Map<String, String>, void> analyticsCallback,
     required String storagePath,
   }) async {
-    bool inFireBaseTestLab = await inFirebaseTestLab();
+    bool inFireBaseTestLab =
+        false; // FIXME: We need to disable analytics in Firebase Test Lab
     bool canBeEnabled = !foundation.kDebugMode && !inFireBaseTestLab;
 
     var pseudoId = pref.getString("pseudoId");
     if (pseudoId == null) {
       pseudoId = const Uuid().v4();
-      var _ = pref.setString("pseudoId", pseudoId);
+      pref.setString("pseudoId", pseudoId);
     }
 
     var config = AnalyticsConfig("", pref);
@@ -157,14 +155,10 @@ class Analytics {
         events: events,
       );
       Log.i("Sending ${events.length} events");
-      var result = await sendAnalytics(msg);
-      if (result.isFailure) {
-        Log.e(
-          "Failed to send Analytics",
-          ex: result.error,
-          stacktrace: result.stackTrace,
-        );
-        logException(result.error!, result.stackTrace!);
+      try {
+        await sendAnalytics(msg);
+      } catch (ex, st) {
+        Log.e("Failed to send Analytics", ex: ex, stacktrace: st);
         return false;
       }
 

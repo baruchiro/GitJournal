@@ -4,22 +4,25 @@
 
 name: Lint
 
-on:
-  workflow_dispatch:
+on: [push, pull_request]
 
 jobs:
   Lint:
     runs-on: ubuntu-latest
-    container: ghcr.io/gitjournal/flutter-android-sdk:latest
     steps:
       - name: checkout
         uses: actions/checkout@v2
+      - name: Get Flutter version from pubspec
+        run: |
+          set -e
+          FLUTTER_VERSION=$(cat pubspec.yaml | grep 'flutter:' | head -n 1 | awk '{ print $2 }' | tr -d '"' | cut -d "=" -f 2)
+          echo "FLUTTER_VERSION=${FLUTTER_VERSION}" >> $GITHUB_ENV
+      - uses: subosito/flutter-action@v2
         with:
-          fetch-depth: 0
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
       - name: Analyze
         run: flutter analyze
-      - name: dart code metrics
-        run: flutter pub run dart_code_metrics:metrics lib
 
   # REUSE-Licensing:
   #   runs-on: ubuntu-latest

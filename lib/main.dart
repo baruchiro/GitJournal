@@ -5,18 +5,31 @@
  */
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:isolate';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:gitjournal/app.dart';
 import 'package:gitjournal/error_reporting.dart';
 import 'package:gitjournal/settings/app_config.dart';
+import 'package:gitjournal/utils/bloc_observer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:stack_trace/stack_trace.dart';
 
-Future<void> main() async {
-  var _ = WidgetsFlutterBinding.ensureInitialized();
+void main() {
+  Chain.capture(() async {
+    await _main();
+  });
+}
+
+Future<void> _main() async {
+  BindingBase.debugZoneErrorsAreFatal = true;
+  Bloc.observer = GlobalBlocObserver();
+
+  WidgetsFlutterBinding.ensureInitialized();
 
   var pref = await SharedPreferences.getInstance();
   AppConfig.instance.load(pref);
@@ -32,11 +45,9 @@ Future<void> main() async {
     await reportError(isolateError.first, isolateError.last);
   }).sendPort);
 
-  await FlutterDisplayMode.setHighRefreshRate();
+  if (Platform.isIOS || Platform.isAndroid) {
+    await FlutterDisplayMode.setHighRefreshRate();
+  }
 
-  await runZonedGuarded(() async {
-    await Chain.capture(() async {
-      await JournalApp.main(pref);
-    });
-  }, reportError);
+  await JournalApp.main(pref);
 }

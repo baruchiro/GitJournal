@@ -1,11 +1,10 @@
 name: git_setup
 description: Widgets to Hook up Git to any project
 version: 0.0.1
-homepage:
 
 environment:
-  sdk: ">=2.17.3 <3.0.0"
-  flutter: ">=1.17.0"
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.19.6"
 
 publish_to: none
 

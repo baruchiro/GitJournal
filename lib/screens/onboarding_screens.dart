@@ -123,8 +123,8 @@ class OnBoardingScreenState extends State<OnBoardingScreen> {
         child: ElevatedButton(
           key: const ValueKey("GetStarted"),
           style: ButtonStyle(
-            backgroundColor: MaterialStateProperty.all<Color>(
-                Theme.of(context).primaryColor),
+            backgroundColor:
+                WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
           ),
           onPressed: _finish,
           child: Text(
@@ -151,11 +151,11 @@ class OnBoardingScreenState extends State<OnBoardingScreen> {
   }
 
   void _finish() {
-    var appConfig = Provider.of<AppConfig>(context, listen: false);
+    var appConfig = context.read<AppConfig>();
     appConfig.onBoardingCompleted = true;
     appConfig.save();
 
-    var _ = Navigator.popAndPushNamed(context, HomeScreen.routePath);
+    Navigator.popAndPushNamed(context, HomeScreen.routePath);
   }
 
   void _nextPage() {
@@ -185,7 +185,7 @@ class OnBoardingBottomButton extends StatelessWidget {
       onPressed: onPressed,
       style: isDark
           ? ButtonStyle(
-              backgroundColor: MaterialStateProperty.all<Color>(
+              backgroundColor: WidgetStateProperty.all<Color>(
                 Theme.of(context).primaryColor,
               ),
             )

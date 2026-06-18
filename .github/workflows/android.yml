@@ -13,43 +13,45 @@ jobs:
   Build:
     runs-on: ubuntu-latest
     steps:
+      - name: Give more Disk Space
+        run: sudo rm -rf /usr/share/dotnet
       - name: checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - uses: actions/setup-java@v2
+      - name: Unlock secrets
+        uses: sliteteam/github-action-git-crypt-unlock@1.2.0
+        env:
+          GIT_CRYPT_KEY: ${{ secrets.GITCRYPT_KEY }}
+      - uses: actions/setup-java@v3
         with:
-          distribution: 'zulu'
-          java-version: '11'
+          distribution: "zulu"
+          java-version: "17"
+      - name: Get Flutter version from pubspec
+        run: |
+          set -e
+          FLUTTER_VERSION=$(cat pubspec.yaml | grep 'flutter:' | head -n 1 | awk '{ print $2 }' | tr -d '"' | cut -d "=" -f 2)
+          echo "FLUTTER_VERSION=${FLUTTER_VERSION}" >> $GITHUB_ENV
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.13.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
 
-      - name: Build Number
-        id: buildnumber
-        run: echo "BUILD_NUM=$(git rev-list --count HEAD)" >> $GITHUB_OUTPUT
-      - name: build
-        env:
-          BUILD_NUM: ${{ steps.buildnumber.outputs.BUILD_NUM }}
-        run: flutter build apk --flavor dev --debug --build-number="$BUILD_NUM" --dart-define=INSTALL_SOURCE=fdroid
-      - name: rename
-        env:
-          BUILD_NUM: ${{ steps.buildnumber.outputs.BUILD_NUM }}
-        run: cp build/app/outputs/flutter-apk/app-dev-debug.apk baruchiro.gitjournal_$BUILD_NUM.apk
-      - name: release
-        uses: softprops/action-gh-release@v1
+      - name: Setup Env
+        run: dart ./scripts/setup_env.dart
+      - name: Flutter Doctor
+        run: flutter doctor
+      - name: Get Flutter Deps
+        run: flutter pub get --suppress-analytics
+      - name: Test
+        run: flutter test
+      - name: Build
+        run: ./scripts/build_android.sh
+      - name: "Upload Artifact"
+        uses: actions/upload-artifact@v4
         with:
-          files: baruchiro.gitjournal_${{ steps.buildnumber.outputs.BUILD_NUM }}.apk
-          name: ${{ steps.buildnumber.outputs.BUILD_NUM }}
-          tag_name: v${{ steps.buildnumber.outputs.BUILD_NUM }}
-          fail_on_unmatched_files: true
-      # - name: Build
-      #   run: ./scripts/build_android.sh
-      # - name: "Upload Artifact"
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: APK
-      #     path: "*.apk"
-      #     if-no-files-found: error
-      # - name: Publish Alpha
-      #   run: cd android && fastlane alphaBuild
+          name: APK
+          path: "*.apk"
+          if-no-files-found: error
+      - name: Publish Alpha
+        run: cd android && fastlane alphaBuild

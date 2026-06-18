@@ -28,7 +28,7 @@ class TagListingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var rootFolder = Provider.of<NotesFolderFS>(context);
+    var rootFolder = context.watch<NotesFolderFS>();
     var inlineTagsView = InlineTagsProvider.of(context);
 
     return FutureBuilderWithProgress(future: () async {
@@ -85,14 +85,14 @@ class TagListingScreen extends StatelessWidget {
           ),
           settings: const RouteSettings(name: TagListingScreen.routePath),
         );
-        var _ = Navigator.push(context, route);
+        Navigator.push(context, route);
       },
     );
   }
 }
 
 Future<FolderView> _tagFolderView(BuildContext context, String tag) async {
-  var rootFolder = Provider.of<NotesFolderFS>(context, listen: false);
+  var rootFolder = context.read<NotesFolderFS>();
   var inlineTagsView = InlineTagsProvider.of(context);
 
   var folder = await FlattenedFilteredNotesFolder.load(

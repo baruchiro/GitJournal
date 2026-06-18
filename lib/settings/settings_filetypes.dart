@@ -39,8 +39,8 @@ class _NoteFileTypesSettingsState extends State<NoteFileTypesSettings> {
   }
 
   List<_FileTypeInfo> _loadInfo() {
-    var root = Provider.of<NotesFolderFS>(context);
-    var config = Provider.of<NotesFolderConfig>(context);
+    var root = context.watch<NotesFolderFS>();
+    var config = context.watch<NotesFolderConfig>();
 
     var types = <String, int>{};
     root.visit((File f) {
@@ -113,9 +113,9 @@ class _NoteFileTypesSettingsState extends State<NoteFileTypesSettings> {
 
         var config = context.read<NotesFolderConfig>();
         if (!info.enabled) {
-          var _ = config.allowedFileExts.remove(info.ext);
+          config.allowedFileExts.remove(info.ext);
         } else {
-          var _ = config.allowedFileExts.add(info.ext);
+          config.allowedFileExts.add(info.ext);
         }
         config.save();
 

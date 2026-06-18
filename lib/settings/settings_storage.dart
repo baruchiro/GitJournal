@@ -4,9 +4,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import 'package:android_external_storage/android_external_storage.dart';
+import 'package:android_x_storage/android_x_storage.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gitjournal/core/folder/notes_folder_config.dart';
 import 'package:gitjournal/core/folder/notes_folder_fs.dart';
 import 'package:gitjournal/l10n.dart';
@@ -36,10 +37,10 @@ class SettingsStorageScreen extends StatelessWidget {
   const SettingsStorageScreen({super.key});
   @override
   Widget build(BuildContext context) {
-    var folderConfig = Provider.of<NotesFolderConfig>(context);
-    var storageConfig = Provider.of<StorageConfig>(context);
-    final repo = Provider.of<GitJournalRepo>(context);
-    var settings = Provider.of<Settings>(context);
+    var folderConfig = context.watch<NotesFolderConfig>();
+    var storageConfig = context.watch<StorageConfig>();
+    final repo = context.watch<GitJournalRepo>();
+    var settings = context.watch<Settings>();
 
     var list = ListView(
       children: [
@@ -68,7 +69,7 @@ class SettingsStorageScreen extends StatelessWidget {
                 name: NoteMetadataSettingsScreen.routePath,
               ),
             );
-            var _ = Navigator.push(context, route);
+            Navigator.push(context, route);
           },
         ),
         ListTile(
@@ -81,7 +82,7 @@ class SettingsStorageScreen extends StatelessWidget {
                 name: NoteFileTypesSettings.routePath,
               ),
             );
-            var _ = Navigator.push(context, route);
+            Navigator.push(context, route);
           },
         ),
         ProOverlay(
@@ -94,7 +95,7 @@ class SettingsStorageScreen extends StatelessWidget {
                 settings:
                     const RouteSettings(name: SettingsTagsScreen.routePath),
               );
-              var _ = Navigator.push(context, route);
+              Navigator.push(context, route);
             },
           ),
         ),
@@ -108,7 +109,7 @@ class SettingsStorageScreen extends StatelessWidget {
                 name: SettingsImagesScreen.routePath,
               ),
             );
-            var _ = Navigator.push(context, route);
+            Navigator.push(context, route);
           },
         ),
         SettingsHeader(context.loc.settingsStorageTitle),
@@ -191,6 +192,7 @@ class SettingsStorageScreen extends StatelessWidget {
             subtitle: Text(repo.repoPath),
             enabled: !storageConfig.storeInternally,
           ),
+        const ShareRepoTile(),
       ],
     );
 
@@ -209,14 +211,52 @@ class SettingsStorageScreen extends StatelessWidget {
   }
 }
 
+class ShareRepoTile extends StatefulWidget {
+  const ShareRepoTile({super.key});
+
+  @override
+  State<ShareRepoTile> createState() => _ShareRepoTileState();
+}
+
+class _ShareRepoTileState extends State<ShareRepoTile> {
+  var _isExporting = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(context.loc.exportRepo),
+      subtitle: Text(context.loc.shareAsZip),
+      enabled: !_isExporting,
+      onTap: () async {
+        try {
+          setState(() {
+            _isExporting = true;
+          });
+          var repo = context.read<GitJournalRepo>();
+          await repo.exportRepo();
+        } catch (e, st) {
+          Log.e("Exporting Repo", ex: e, stacktrace: st);
+          showErrorMessageSnackbar(
+            context,
+            context.loc.failedToExport,
+          );
+        }
+
+        setState(() {
+          _isExporting = false;
+        });
+      },
+    );
+  }
+}
+
 Future<bool> _isDirWritable(String path) async {
   var fileName = DateTime.now().millisecondsSinceEpoch.toString();
   var file = File(p.join(path, fileName));
 
   try {
-    dynamic _;
-    _ = await file.writeAsString("test");
-    _ = await file.delete();
+    await file.writeAsString("test");
+    await file.delete();
   } catch (_) {
     return false;
   }
@@ -247,7 +287,14 @@ Future<String> _getExternalDir(BuildContext context) async {
     }
   }
 
-  var path = await AndroidExternalStorage.getExternalStorageDirectory();
+  final _androidXStoragePlugin = AndroidXStorage();
+  String? path;
+  try {
+    path = await _androidXStoragePlugin.getExternalStorageDirectory();
+  } on PlatformException catch (e) {
+    Log.e("Error getting external storage directory", ex: e);
+  }
+
   if (path != null) {
     if (await _isDirWritable(path)) {
       return path;
@@ -275,7 +322,7 @@ class DefaultNoteFolderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var settings = Provider.of<Settings>(context);
+    var settings = context.watch<Settings>();
 
     var defaultNewFolder = settings.defaultNewNoteFolderSpec;
     if (defaultNewFolder.isEmpty) {
@@ -312,7 +359,7 @@ class DefaultFileFormatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var folderConfig = Provider.of<NotesFolderConfig>(context);
+    var folderConfig = context.watch<NotesFolderConfig>();
 
     return ListPreference(
       title: context.loc.settingsEditorsDefaultNoteFormat,

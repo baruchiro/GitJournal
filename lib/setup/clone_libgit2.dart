@@ -4,15 +4,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import 'package:dart_git/dart_git.dart';
-import 'package:function_types/function_types.dart';
-import 'package:git_bindings/git_bindings.dart' as git_bindings;
-import 'package:git_setup/git_transfer_progress.dart';
+import 'dart:convert';
 
+import 'package:dart_git/dart_git.dart';
+import 'package:dart_git/plumbing/reference.dart';
+import 'package:function_types/function_types.dart';
+import 'package:git_setup/git_transfer_progress.dart';
 import 'package:gitjournal/logger/logger.dart';
+import 'package:go_git_dart/go_git_dart_async.dart';
+
 import 'clone.dart';
 
-Future<Result<void>> cloneRemote({
+Future<void> cloneRemote({
   required String repoPath,
   required String cloneUrl,
   required String remoteName,
@@ -23,25 +26,23 @@ Future<Result<void>> cloneRemote({
   required String authorEmail,
   required Func1<GitTransferProgress, void> progressUpdate,
 }) {
-  return catchAll(
-    () => cloneRemotePluggable(
-      repoPath: repoPath,
-      cloneUrl: cloneUrl,
-      remoteName: remoteName,
-      sshPublicKey: sshPublicKey,
-      sshPrivateKey: sshPrivateKey,
-      sshPassword: sshPassword,
-      authorName: authorName,
-      authorEmail: authorEmail,
-      progressUpdate: progressUpdate,
-      gitCloneFn: _clone,
-      gitFetchFn: _fetch,
-      defaultBranchFn: _defaultBranch,
-    ),
+  return cloneRemotePluggable(
+    repoPath: repoPath,
+    cloneUrl: cloneUrl,
+    remoteName: remoteName,
+    sshPublicKey: sshPublicKey,
+    sshPrivateKey: sshPrivateKey,
+    sshPassword: sshPassword,
+    authorName: authorName,
+    authorEmail: authorEmail,
+    progressUpdate: progressUpdate,
+    gitCloneFn: _clone,
+    gitFetchFn: _fetch,
+    defaultBranchFn: _defaultBranch,
   );
 }
 
-Future<Result<void>> _clone({
+Future<void> _clone({
   required String cloneUrl,
   required String repoPath,
   required String sshPublicKey,
@@ -49,23 +50,16 @@ Future<Result<void>> _clone({
   required String sshPassword,
   required String statusFile,
 }) async {
-  try {
-    await git_bindings.GitRepo.clone(
-      cloneUrl: cloneUrl,
-      folderPath: repoPath,
-      publicKey: sshPublicKey,
-      privateKey: sshPrivateKey,
-      password: sshPassword,
-      statusFile: statusFile,
-    );
-  } catch (e, st) {
-    return Result.fail(e, st);
-  }
-
-  return Result(null);
+  var bindings = GitBindingsAsync();
+  await bindings.clone(
+    cloneUrl,
+    repoPath,
+    utf8.encode(sshPrivateKey),
+    sshPassword,
+  );
 }
 
-Future<Result<void>> _fetch(
+Future<void> _fetch(
   String repoPath,
   String remoteName,
   String sshPublicKey,
@@ -73,23 +67,12 @@ Future<Result<void>> _fetch(
   String sshPassword,
   String statusFile,
 ) async {
-  try {
-    var gitRepo = git_bindings.GitRepo(folderPath: repoPath);
-    await gitRepo.fetch(
-      remote: remoteName,
-      publicKey: sshPublicKey,
-      privateKey: sshPrivateKey,
-      password: sshPassword,
-      statusFile: statusFile,
-    );
-  } catch (e, st) {
-    return Result.fail(e, st);
-  }
-
-  return Result(null);
+  var bindings = GitBindingsAsync();
+  await bindings.fetch(
+      remoteName, repoPath, utf8.encode(sshPrivateKey), sshPassword);
 }
 
-Future<Result<String>> _defaultBranch(
+Future<String> _defaultBranch(
   String repoPath,
   String remoteName,
   String sshPublicKey,
@@ -97,29 +80,32 @@ Future<Result<String>> _defaultBranch(
   String sshPassword,
 ) async {
   try {
-    var gitRepo = git_bindings.GitRepo(folderPath: repoPath);
-    var branch = await gitRepo.defaultBranch(
-      remote: remoteName,
-      publicKey: sshPublicKey,
-      privateKey: sshPrivateKey,
-      password: sshPassword,
-    );
+    var repo = GitRepository.load(repoPath);
+    var remote = repo.config.remote(remoteName);
+    if (remote == null) {
+      throw Exception("Remote '$remoteName' not found");
+    }
+
+    var bindings = GitBindingsAsync();
+    var branch = await bindings.defaultBranch(
+        remote.url, utf8.encode(sshPrivateKey), sshPassword);
+
     Log.i("Got default branch: $branch");
-    if (branch != null && branch.isNotEmpty) {
-      return Result(branch);
+    if (branch.isNotEmpty) {
+      return branch;
     }
   } catch (ex) {
     Log.w("Could not fetch git Default Branch", ex: ex);
   }
 
-  var repo = GitRepository.load(repoPath).getOrThrow();
+  var repo = GitRepository.load(repoPath);
   var remoteBranch = repo.guessRemoteHead(remoteName);
-  var _ = repo.close();
-  if (remoteBranch == null || remoteBranch.target == null) {
+  repo.close();
+  if (remoteBranch == null || remoteBranch is! SymbolicReference) {
     Log.e("Failed to guess RemoteHead. Returning `main`");
-    return Result("main");
+    return "main";
   }
-  var branch = remoteBranch.target!.branchName()!;
+  var branch = remoteBranch.target.branchName()!;
   Log.d("Guessed default branch as $branch");
-  return Result(branch);
+  return branch;
 }

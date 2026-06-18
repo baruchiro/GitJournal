@@ -26,7 +26,7 @@ class _ExperimentalSettingsScreenState
     extends State<ExperimentalSettingsScreen> {
   @override
   Widget build(BuildContext context) {
-    var appConfig = Provider.of<AppConfig>(context);
+    var appConfig = context.watch<AppConfig>();
 
     return Scaffold(
       appBar: AppBar(
@@ -74,24 +74,6 @@ class _ExperimentalSettingsScreenState
               },
             ),
             SwitchListTile(
-              title: Text(context.loc.settingsExperimentalMerge),
-              value: appConfig.experimentalGitMerge,
-              onChanged: (bool newVal) {
-                appConfig.experimentalGitMerge = newVal;
-                appConfig.save();
-                setState(() {});
-              },
-            ),
-            SwitchListTile(
-              title: Text(context.loc.settingsExperimentalExperimentalGitOps),
-              value: appConfig.experimentalGitOps,
-              onChanged: (bool newVal) {
-                appConfig.experimentalGitOps = newVal;
-                appConfig.save();
-                setState(() {});
-              },
-            ),
-            SwitchListTile(
               title: Text(context.loc.settingsExperimentalAutoCompleteTags),
               value: appConfig.experimentalTagAutoCompletion,
               onChanged: (bool newVal) {
@@ -100,20 +82,11 @@ class _ExperimentalSettingsScreenState
                 setState(() {});
               },
             ),
-            SwitchListTile(
-              title: Text(context.loc.settingsExperimentalHistory),
-              value: appConfig.experimentalHistory,
-              onChanged: (bool newVal) {
-                appConfig.experimentalHistory = newVal;
-                appConfig.save();
-                setState(() {});
-              },
-            ),
             ListTile(
               title: const Text('Enter Pro Password'),
               subtitle: Text('Pro: ${AppConfig.instance.proMode}'),
               onTap: () async {
-                var _ = await showDialog(
+                await showDialog(
                   context: context,
                   builder: (context) => _PasswordForm(),
                 );

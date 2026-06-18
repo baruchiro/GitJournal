@@ -8,8 +8,6 @@ on:
   push:
     branches:
       - master
-      # Temporary: lets this branch build an APK before it is merged to master.
-      - claude/elegant-johnson-5sn880
   workflow_dispatch:
 
 permissions:

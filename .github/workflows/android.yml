@@ -44,7 +44,16 @@ jobs:
           cache: true
 
       - name: Generate env file
-        run: dart ./scripts/setup_env.dart
+        run: |
+          # scripts/setup_env.dart reads secrets/env.json, which is git-crypt
+          # encrypted and unavailable here, so it would emit an empty Env class
+          # and the build would fail on Env.sentry. Write a minimal stub
+          # instead. An empty Sentry DSN simply disables crash reporting.
+          cat > lib/.env.dart <<'EOF'
+          class Env {
+            static const String sentry = "";
+          }
+          EOF
 
       - name: Get dependencies
         run: flutter pub get --suppress-analytics

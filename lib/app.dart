@@ -138,25 +138,31 @@ class JournalAppState extends State<JournalApp> {
       }
       _navigatorKey.currentState!
           .pushNamed(AppRoute.NewNotePrefix + shortcutType);
-
-      quickActions.setShortcutItems(<ShortcutItem>[
-        ShortcutItem(
-          type: 'Markdown',
-          localizedTitle: context.loc.actionsNewNote,
-          icon: "ic_markdown",
-        ),
-        ShortcutItem(
-          type: 'Checklist',
-          localizedTitle: context.loc.actionsNewChecklist,
-          icon: "ic_tasks",
-        ),
-        ShortcutItem(
-          type: 'Journal',
-          localizedTitle: context.loc.actionsNewJournal,
-          icon: "ic_book",
-        ),
-      ]);
     });
+
+    // Register the launcher shortcuts (long-press the app icon) once, at
+    // startup. This used to live inside the handler above, so it only ran
+    // *after* a shortcut was tapped - which never happened because the
+    // shortcuts were never registered. Titles are hard-coded because
+    // AppLocalizations is provided by the MaterialApp built below this widget
+    // and isn't reachable from this context.
+    unawaited(quickActions.setShortcutItems(<ShortcutItem>[
+      ShortcutItem(
+        type: 'Journal',
+        localizedTitle: 'New Journal',
+        icon: 'ic_book',
+      ),
+      ShortcutItem(
+        type: 'Markdown',
+        localizedTitle: 'New Note',
+        icon: 'ic_markdown',
+      ),
+      ShortcutItem(
+        type: 'Checklist',
+        localizedTitle: 'New Checklist',
+        icon: 'ic_tasks',
+      ),
+    ]));
 
     _initShareSubscriptions();
   }

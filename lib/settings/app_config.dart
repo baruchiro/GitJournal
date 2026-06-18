@@ -23,9 +23,10 @@ class AppConfig extends ChangeNotifier {
 
   int version = 0;
 
-  bool proMode = false;
+  // GitJournal Pro is unlocked by default in this fork.
+  bool proMode = true;
 
-  var validateProMode = true;
+  var validateProMode = false;
 
   var debugLogLevel = 'v';
 

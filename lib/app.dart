@@ -25,6 +25,7 @@ import 'package:gitjournal/settings/settings.dart';
 import 'package:gitjournal/settings/storage_config.dart';
 import 'package:gitjournal/themes.dart';
 import 'package:hive/hive.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -165,6 +166,7 @@ class JournalAppState extends State<JournalApp> {
     ]));
 
     _initShareSubscriptions();
+    _initHomeWidget();
   }
 
   void _afterBuild(BuildContext context) {
@@ -173,6 +175,30 @@ class JournalAppState extends State<JournalApp> {
       _navigatorKey.currentState!.pushNamed(routeName);
       _pendingShortcut = null;
     }
+  }
+
+  // Home-screen widget: a tap launches the app with gitjournal://widget/journal
+  // (see android/.../JournalWidgetProvider.kt). Open a new journal entry in
+  // response, reusing the same pending-shortcut path as the launcher actions.
+  Future<void> _initHomeWidget() async {
+    HomeWidget.widgetClicked.listen(_onHomeWidgetClicked);
+    var uri = await HomeWidget.initiallyLaunchedFromHomeWidget();
+    _onHomeWidgetClicked(uri);
+  }
+
+  void _onHomeWidgetClicked(Uri? uri) {
+    if (uri == null) return;
+    Log.i("Home Widget Open: $uri");
+
+    const shortcutType = 'Journal';
+    if (_navigatorKey.currentState == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _afterBuild(context));
+      setState(() {
+        _pendingShortcut = shortcutType;
+      });
+      return;
+    }
+    _navigatorKey.currentState!.pushNamed(AppRoute.NewNotePrefix + shortcutType);
   }
 
   void _handleShare(Duration _) {

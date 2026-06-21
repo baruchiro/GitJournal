@@ -24,9 +24,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  NotesFolder? notesFolder;
-  NotesFolderFS? rootFolder;
-  String? homeFolderSpec;
+  NotesFolder? _allNotesFolder;
+  NotesFolderFS? _rootFolder;
 
   @override
   void initState() {
@@ -34,38 +33,40 @@ class _HomeScreenState extends State<HomeScreen> {
     initializeDateFormatting();
   }
 
-  Future<void> _initFolder() async {
-    if (!mounted) return;
-
-    var root = context.watch<NotesFolderFS>();
-    var spec = context.watch<Settings>().homeScreenFolderSpec;
-    if (root != rootFolder || spec != homeFolderSpec) {
-      rootFolder = root;
-      homeFolderSpec = spec;
-
-      // When a home folder is configured, open straight into it. Otherwise
-      // fall back to the flattened "All Notes" view.
-      var folder = spec.isNotEmpty ? root.getFolderWithSpec(spec) : null;
-      notesFolder = folder ??
-          FlattenedNotesFolder(
-            root,
-            title: context.loc.screensHomeAllNotes,
-          );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    _initFolder();
-    if (notesFolder == null) {
-      return Container();
-    }
-
+    var root = context.watch<NotesFolderFS>();
+    var spec = context.watch<Settings>().homeScreenFolderSpec;
     var repo = context.watch<GitJournalRepo>();
+
+    // Wait for the folder tree to be loaded before trying to resolve the
+    // configured home folder - until the cache is ready getFolderWithSpec()
+    // can't find it, which previously made it fall back to "All Notes".
     if (!repo.fileStorageCacheReady) {
       return const CacheLoadingScreen();
     }
 
-    return FolderView(notesFolder: notesFolder!);
+    // Cache the flattened "All Notes" folder; recreating it every build would
+    // churn its listeners.
+    if (root != _rootFolder || _allNotesFolder == null) {
+      _rootFolder = root;
+      _allNotesFolder = FlattenedNotesFolder(
+        root,
+        title: context.loc.screensHomeAllNotes,
+      );
+    }
+
+    // If a home folder is configured and it exists, open straight into it.
+    // Resolved on every build so it self-heals as the tree finishes loading;
+    // passing the folder straight to FolderView keeps its state stable.
+    NotesFolder displayedFolder = _allNotesFolder!;
+    if (spec.isNotEmpty) {
+      var homeFolder = root.getFolderWithSpec(spec);
+      if (homeFolder != null) {
+        displayedFolder = homeFolder;
+      }
+    }
+
+    return FolderView(notesFolder: displayedFolder);
   }
 }

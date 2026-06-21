@@ -8,8 +8,6 @@ on:
   push:
     branches:
       - master
-      # Temporary: validate builds on this branch before merging to master.
-      - claude/elegant-johnson-5sn880
   workflow_dispatch:
 
 permissions:

@@ -31,6 +31,19 @@ android {
         checkReleaseBuilds false
     }
 
+    // Keep Java and Kotlin on the same JVM target. Without this the Kotlin
+    // compile task (e.g. the home-screen widget provider) defaults to the
+    // JDK 17 toolchain while Java stays at 1.8, which fails the build with
+    // an "Inconsistent JVM-target compatibility" error.
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
     defaultConfig {
         applicationId "io.gitjournal.gitjournal"
         minSdkVersion flutter.minSdkVersion

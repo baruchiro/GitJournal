@@ -22,7 +22,9 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
       - name: Analyze
-        run: flutter analyze
+        # Treat info-level lints (e.g. upstream's RadioGroup/copyWith
+        # deprecations) as non-fatal; still fail on warnings and errors.
+        run: flutter analyze --no-fatal-infos
 
   # REUSE-Licensing:
   #   runs-on: ubuntu-latest
